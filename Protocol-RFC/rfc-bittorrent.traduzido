@@ -1,0 +1,478 @@
+Resumo
+
+Este documento descreve a versão 1.0 do protocolo de BitTorrent referida como "BTP/1.0". O Protocolo BitTorrent (BTP) é um protocolo para distribuição colaborativa de arquivos pela Internet e está em vigor na Internet desde 2002. É o melhor classificado como um protocolo ponto-a-ponto (P2P), embora também contenha elementos altamente centralizados. O BTP já foi implementado muitas vezes para diferentes plataformas, e poderia muito bem ser considerado um protocolo maduro, embora até agora não tenha sido feita uma descrição formal, detalhada e completa.
+
+O BTP foi desenvolvido e implementado por Bram Cohen como um substituto P2P para o FTP (Protocolo de Transferência de Arquivos) a ser usado em locais onde o uso de uma implementação FTP sobrecarrega o servidor em termos de processamento de pedidos e largura de banda. Normalmente, um cliente não usa sua capacidade de upload durante o download de um arquivo. A abordagem BTP capitaliza esse fato fazendo com que os clientes carreguem bits dos dados uns para os outros. Em comparação com o FTP, isso adiciona enormes vantagens de escalabilidade e gerenciamento de custos.
+
+1 Introdução
+
+As palavras-chave "DEVE", "NÃO DEVE", "É NECESSÁRIO", "RECOMENDADO", "PODE" e "OPCIONAL" neste documento são para ser interpretado como descrito no RFC 2119 [3].
+
+O File Transfer Protocol (FTP) [1], com as recentes adições de extensões de segurança, continua sendo o padrão para a transmissão segura e confiável de arquivos grandes pela Internet. No entanto, sua abordagem cliente-servidor altamente centralizada também significa que é inadequada para publicação em massa de arquivos, em que um único ponto pode esperar ser solicitado por um número criticamente grande de clientes simultaneamente. Para remediar essa situação, muitas organizações implementam um limite no número de solicitações simultâneas ou distribuem a carga em vários servidores espelho. Desnecessário será dizer que ambas as abordagens têm suas desvantagens, e uma solução que resolve esses problemas é altamente necessária.
+
+A abordagem no Protocolo BitTorrent (BTP) é espalhar a carga não em servidores espelho, mas para os próprios clientes fazendo com que eles carreguem bits do arquivo entre si durante o download. Como os clientes geralmente não utilizam sua capacidade de upload ao buscar um arquivo, essa abordagem não coloca os clientes em desvantagem. Isso tem a vantagem adicional de que mesmo pequenas organizações com recursos limitados podem publicar arquivos grandes na Internet sem precisar investir em infraestrutura dispendiosa.
+
+1.1 Extensões
+
+Desde a introdução do BTP, muitas modificações e extensões foram propostas por indivíduos e fóruns da comunidade. Na medida em que essas extensões se tornaram parte do que a comunidade de BitTorrent considera melhor prática, elas foram incluídas neste documento. No entanto, muitas extensões foram omitidas porque foram consideradas como falta de interoperabilidade com implementações existentes ou porque não são consideradas suficientemente maduras.
+
+1.2 Publico
+
+Este documento é destinado a desenvolvedores que desejam implementar o BTP para uma plataforma específica. Além disso, administradores de sistemas e arquitetos podem usar este documento para entender completamente as implicações da instalação de uma implementação de BTP. Em particular, é aconselhável estudar as implicações de segurança em mais detalhes, antes de instalar uma implementação em uma máquina que também contenha dados confidenciais. As implicações de segurança são discutidas na Seção 7.
+
+1.3 Terminologia
+
+Peer (par):
+	Um peer é um nó em uma rede que participa do compartilhamento de arquivos. Ele pode atuar simultaneamente como um servidor e um cliente para outros nós na rede.
+
+Peer adjacentes:
+	Peers aos quais um cliente possui um ponto ativo para apontar a conexão TCP.
+
+Cliente:
+	Um cliente é um agente do usuário (UA) que age como um peer em nome de um usuário.
+
+Torrent (torrente):
+     Um torrent é o termo para o arquivo (torrent de arquivo único) ou grupo de arquivos (multi-file torrent) que o cliente está baixando.
+
+Swarm (enxame):
+	Uma rede de pares que operam ativamente em um determinado torrent.
+
+Seeder (semeador):
+	Um par que tem uma cópia completa de um torrent.
+
+Tracker (rastreador):
+	Um rastreador é um servidor centralizado que contém informações sobre um ou mais torrents e enxames associados. Funciona como um gateway para os pares em um enxame.
+
+Arquivo Metainfo:
+     Um arquivo de texto que contém informações sobre o torrent, por exemplo o URL do rastreador. Geralmente tem a extensão .torrent.
+
+Peer ID:
+     Uma cadeia de 20 bytes que identifica o par. Como o peer ID é obtido está fora do escopo deste documento, mas um peer deve se certificar de que o peer ID que ele usa tem uma probabilidade muito alta de ser único no swarm.
+
+Info hash:
+  	Um hash SHA1 que identifica exclusivamente o torrent. É calculado a partir dos dados no arquivo metainfo.
+
+Fragmentos:
+	São os pedaços do arquivo original. Geralmente em 256 Kb, o arquivo é quebrado e estes fragmentos são enviados e baixados dos pares. Isto é uma propriedadade de que qualquer cliente, mesmo que tenha poucas partes do arquivo, pode compartilhar.
+
+1.4 Operação Geral
+
+O BTP consiste em dois protocolos logicamente distintos, a saber, o protocolo HTTP do Tracker (Tracker HTTP Protocol, THP), e o protocolo do peer wire (Peer Wire Protocol, PWP). O THP define um método para contatar um rastreador com o propósito de unir-se a um enxame, relatando o progresso etc. O PWP define um mecanismo de comunicação entre pares e é, portanto, responsável por realizar o download e upload reais do torrent.
+
+Para que um cliente baixe um torrent, as seguintes etapas devem ser realizadas:
+	1. Um arquivo metainfo deve ser recuperado.
+    2. As instruções que permitirão ao cliente entrar em contato com outros pares devem ser periodicamente solicitadas ao rastreador usando o THP.
+	3. O torrent deve ser baixado conectando-se a peers no enxame e trocando pedaços usando o PWP.
+
+Para publicar um torrent, os seguintes passos devem ser tomados:
+	1. Um rastreador deve ser configurado.
+    2. Um arquivo metainfo apontando para o rastreador e contendo informações sobre a estrutura do torrent deve ser produzido e publicado.
+    3. Pelo menos uma semeadora com acesso ao torrent completo deve ser configurada.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+2. Codificação
+
+A codificação codifica dados de maneira independente da plataforma. No BTP/1.0, o arquivo metainfo e todas as respostas do rastreador são codificadas no formato de codificação. O formato especifica dois tipos escalares (inteiros e sequências, integers and strings) e dois tipos compostos (listas e dicionários, lists and dictionaries).
+
+A sintaxe de BNF aumentada[5] para o formato de codificação é:
+
+dictionary = "d" 1*(string anytype) "e" ; non-empty dictionary
+list       = "l" 1*anytype "e"          ; non-empty list
+integer    = "i" signumber "e"
+string     = number ":" <number long sequence of any CHAR>
+anytype    = dictionary / list / integer / string
+signumber  = "-" number / number
+number     = 1*DIGIT
+CHAR       = %x00-FF                    ; any 8-bit character
+DIGIT      = "0" / "1" / "2" / "3" / "4" /
+                "5" / "6" / "7" / "8" / "9"
+(ORIGINAL)
+
+2.1 Tipos Escalares
+
+Os inteiros são codificados prefixando uma string contendo a representação da base dez do inteiro com a letra "i" e colocando-a com a letra "e". Por exemplo. o inteiro 123 é codificado como i123e.
+
+As strings são codificadas prefixando o conteúdo da string com o comprimento da string seguido por dois pontos. Por exemplo. a string "announce" é codificada como "8:announce".
+
+2.2 Tipos Compostos
+
+Os tipos compostos fornecem um meio para estruturar elementos de qualquer tipo de codificação.
+
+Listas são um número arbitrário de elementos codificados prefixados com a letra "l" e pós-fixados com a letra "e". Segue-se que as listas podem conter listas e dicionários aninhados. Por exemplo, "li2e3:fooe" define uma lista contendo o inteiro "2" e a string "foo".
+
+Dicionários são um número arbitrário de pares chave/valor delimitados pela letra "d" no início e a letra "e" no final. Todas as chaves são seqüências codificadas, enquanto o valor associado pode ser qualquer elemento codificado. Por exemplo. "d5:monthi4e4:name5:aprile" define um dicionário que contém as associações: "month" => "4" e "name" => "april". Todas as chaves do dicionário DEVEM ser classificadas.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+3. partes e Blocos
+
+Esta seção descreve como um torrent é organizado em partes e blocos. O torrente é dividido em uma ou mais partes. Cada parte representa um intervalo de dados que é possível verificar usando um hash de parte SHA1. Quando a distribuição de dados por partes do PWP é dividida em um ou mais blocos, conforme mostrado no diagrama a seguir:
+
+              ---------------------------------------
+              | Piece #0 | Piece #1 | .. | Piece #N |
+              ---------------------------------------
+                      _-´            `-_
+                   _-´                  `-_
+                 ----------------------------
+                 | Block #0 | .. | Block #M |
+                 ----------------------------
+
+3.1 partes
+
+O número de partes no torrent é indicado no arquivo metainfo. O tamanho de cada parte no torrent permanece fixo e pode ser calculado usando a seguinte fórmula:
+
+			fixed_piece_size = size_of_torrent / number_of_pieces
+
+onde "/" é o operador de divisão inteira. Somente a última parte do torrent pode ter menos bytes que o tamanho fixo da parte.
+
+O tamanho de uma parte é determinado pelo editor da torrente. Uma boa recomendação é usar um tamanho de parte para que o arquivo metainfo não exceda 70 kilobytes.
+
+Para calcular a posição correta de uma parte dentro de um arquivo ou arquivos, a torrente é considerada como um único fluxo contínuo de bytes. Caso o torrent seja composto por vários arquivos, ele deve ser visto como a concatenação desses arquivos na ordem em que aparecem no arquivo metainfo. Conceitualmente, o torrent só é traduzido em arquivos quando todas as suas partes foram baixadas e verificadas usando seus respectivos valores SHA1; embora, na prática, uma implementação possa escolher uma abordagem melhor de acordo com o sistema operacional local e as demandas específicas do sistema de arquivos.
+
+3.2 Blocos
+
+O tamanho de um bloco é um valor definido pela implementação que não depende do tamanho fixo da parte. Quando um tamanho fixo é definido, o número de blocos por parte pode ser calculado usando a fórmula:
+
+			number_of_blocks = (fixed_piece_size / fixed_block_size) + !!(fixed_piece_size % fixed_block_size)
+
+onde "%" denota o operador de módulo e "!" o operador de negação. O operador de negação é usado para garantir que o último fator adicione apenas um valor de 0 ou 1 à soma. Dado o offset inicial do bloco, seu índice dentro de uma parte pode ser calculado usando a fórmula:
+
+			block_index = block_offset % fixed_block_size
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+4. O Arquivo Metainfo
+
+O arquivo metainfo fornece ao cliente informações sobre o local do rastreador e também sobre o torrente a ser baixado. Além de listar quais arquivos resultarão do download do torrent, ele também lista como o cliente deve dividir e verificar as partes individuais que compõem o torrent completo.
+
+Para que um cliente reconheça o arquivo metainfo, ele DEVE ter a extensão .torrent e o associado o tipo de mídia(MymeType) "application/x-bittorrent". Como o cliente recupera o arquivo metainfo está além do escopo deste documento, no entanto, a abordagem mais fácil de usar é que um cliente localize o arquivo em uma página da Web, clique nele e inicie o download imediatamente. Desta forma, a aparente complexidade do BTP em oposição à transferência por FTP ou HTTP é transparente para o usuário.
+
+4.1 A Estrutura do Arquivo Metainfo
+
+O arquivo metainfo contém um dicionário codificado com a seguinte estrutura. Uma chave abaixo é REQUERIDA, a menos que seja indicado de outra forma.
+
+'announce':
+	Este é um valor de string. Ele contém o URL de anúncio do rastreador.
+'announce-list':
+	Esta é uma lista OPCIONAL de valores de string. Cada valor é um URL que aponta para um rastreador de backup. Este valor não é usado no BTP/1.0.
+'comment':
+	Este é um valor de string OPCIONAL que pode conter qualquer comentário do autor do torrent.
+'created by':
+	Esse é uma string OPCIONAL e pode conter o nome e a versão do programa usado para criar o arquivo metainfo.
+'creation date':
+	Este é uma string OPCIONAL. Ele contém o tempo de criação do torrent no formato de época padrão do Unix.
+'info':
+	Essa chave aponta para um dicionário que contém informações sobre os arquivos para download. As entradas são explicadas nas seções a seguir.
+
+4.1 Torrent de Arquivo Único
+
+Se o torrent só especifica um arquivo, o dicionário de informações deve ter as seguintes chaves:
+
+'length':
+	Este é um valor inteiro indicando o comprimento do arquivo em bytes.
+'md5sum':
+	Este é um valor OPCIONAL. Se incluído, deve ser uma cadeia de 32 caracteres correspondente à soma MD5 do arquivo. Este valor não é usado no BTP/1.0.
+'name':
+	Uma string contendo o nome do arquivo.
+'piece length':
+	Um inteiro indicando o número de bytes em cada parte.
+'pieces':
+	Este é um valor de string contendo a concatenação do valor hash SHA1 de 20 bytes para todas as partes no torrent. Por exemplo, os primeiros 20 bytes da string representam o valor SHA1 usado para verificar o índice de peça 0.
+
+O arquivo completo é derivado da combinação de todas as partes em uma cadeia de bytes.
+
+4.2 Torrent de Vários Arquivos
+
+Se o torrent especificar vários arquivos, o dicionário de informações deve ter a seguinte estrutura:
+
+'files':
+	Esta é uma lista de dicionários. Cada arquivo no torrent tem um dicionário associado a ele com a seguinte estrutura:
+		'length':
+			Este é um inteiro indicando o comprimento total do arquivo em bytes.
+		'md5sum':
+			Este é um valor OPCIONAL. se incluído, deve ser uma string de 32 caracteres correspondente à soma MD5 do arquivo. Este valor não é usado no BTP/1.0.
+		'path':
+			Esta é uma lista de elementos de string que especificam o caminho do arquivo, relativo ao diretório mais acima. O último elemento na lista é o nome do arquivo e os elementos que o precedem indicam a hierarquia de diretórios na qual esse arquivo está situado.
+
+'name':
+	Este é um valor de string. Ele contém o nome do diretório mais alto na estrutura de arquivos.
+'piece length':
+	Este é um valor inteiro. Ele contém o número de bytes em cada parte.
+'pieces':
+	Este é um valor de string. Ele deve conter a concatenação de todos os valores hash SHA1 de 20 bytes usados pelo BTP/1.0 para verificar cada parte transferida por download. Os primeiros 20 bytes da string representam o valor SHA1 usado para verificar o índice de peça 0.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+5. O Tracker HTTP Protocol
+
+O Tracker HTTP Protocol (THP) é um mecanismo simples para introduzir os pares uns aos outros. Um rastreador é um serviço HTTP que deve ser contatado por um par para se unir a um enxame. Como tal, o rastreador constitui o único elemento centralizado no BTP/1.0. Um rastreador não fornece acesso a nenhum dado que possa ser baixado. Um rastreador depende de seus pares enviarem solicitações regulares. Pode supor que um par esteja morto se falhar um pedido.
+
+5.1 Pedido
+
+Para entrar em contato com o rastreador, um par deve enviar uma solicitação HTTP GET padrão usando o URL na entrada "announce" do arquivo metainfo. A solicitação GET deve ser parametrizada conforme especificado no protocolo HTTP. Os seguintes parâmetros devem estar presentes na solicitação:
+
+'info_hash':
+	Este é um valor de hash SHA1 de 20 bytes REQUERIDO. Para obter esse valor, o par deve calcular o SHA1 do valor da chave "info" no arquivo metainfo.
+'peer_id':
+	Esta é uma string e deve conter o ID auto-designado de 20 bytes do peer. Este valor é REQUERIDO.
+'port':
+	O número da porta que o par está escutando para conexões de entrada de outros pares. BTP/1.0 não especifica um número de porta padrão, nem um intervalo de portas a ser usado. Esta chave é REQUERIDA.
+'uploaded':
+	Este é um valor inteiro na base 10 - valor normal. Denota a quantidade total de bytes que o peer carregou no swarm desde que enviou o evento "started" para o rastreador. Esta chave é REQUERIDA.
+'downloaded':
+	Este é um valor inteiro na base 10 - valor normal. Ele denota a quantidade total de bytes que o peer baixou no enxame desde que enviou o evento "started" para o rastreador. Esta chave é REQUERIDA.
+'left':
+	Este é um valor inteiro na base 10 - valor normal. Denota a quantidade total de bytes que o par precisa neste torrent para concluir seu download. Esta chave é REQUERIDA.
+'ip':
+	Esse é um valor OPCIONAL e, se presente, deve indicar o verdadeiro endereço de toda a Internet do peer (Internet-wide address of the peer), seja no formato IPv4 quádruplo pontilhado, no formato IPv6 hexadecimal ou em um nome DNS.
+'numwant':
+	Este é um valor OPCIONAL. Se presente, deve indicar o número de pares que o par local deseja receber do rastreador. Se não estiver presente, o rastreador usa um valor definido pela implementação.
+'event':
+	Este parâmetro é OPCIONAL. Se não especificado, a solicitação é considerada como uma solicitação periódica regular. Caso contrário, DEVE ter um dos três valores a seguir:
+		'started':
+			A primeira solicitação HTTP GET enviada ao rastreador deve ter esse valor no parâmetro "event".
+		'stopped':
+			Este valor deve ser enviado para o rastreador quando o par está desligando normalmente.
+		'completed':
+			Este valor deve ser enviado para o rastreador quando o par completar um download. O par não deve enviar este valor se ele começou com o torrent completo.
+
+5.2 Resposta
+
+Ao receber a solicitação HTTP GET, o rastreador DEVE responder com um documento com o tipo MIME "text/plain". Este documento DEVE conter um dicionário codificado com as seguintes chaves:
+
+'failure reason':
+	Essa chave é OPCIONAL. Se presente, o dicionário não deve conter outras chaves. O par deve interpretar isso como se a tentativa de ingressar no torrent falhasse. O valor é uma cadeia legível por humanos que contém uma mensagem de erro com o motivo da falha.
+'interval':
+	Um peer deve enviar solicitações HTTP GET regulares para o rastreador para obter uma lista atualizada de peers e atualizar o rastreador de seu status. O valor dessa chave indica a quantidade de tempo que um par deve aguardar entre solicitações regulares consecutivas. Esta chave é REQUERIDA.
+'complete':
+	Este é um inteiro que indica o número de semeadoras. Essa chave é OPCIONAL.
+'incomplete':
+	Este é um inteiro que indica o número de peers baixando o torrent. Essa chave é OPCIONAL.
+'peers':
+	Esta é uma lista de dicionários codificado contendo uma lista de pares que devem ser contatados para fazer o download de um arquivo. Esta chave é REQUERIDA. Tem a seguinte estrutura:
+		'peer id':
+			Este é uma string REQUERIDA contendo o ID auto-designado do peer.
+		'ip':
+			Este é uma string REQUERIDA indicando o endereço IP do peer. Isso pode ser dado como um formato IPv4 pontilhado, formato IPv6 hexadecimal ou nome DNS.
+		'port':
+			Este é um valor inteiro. Deve conter o número da porta auto-designada do peer. Esta chave é REQUERIDA.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+6. Protocolo Fio do Peer (The Peer Wire Protocol)
+
+O objetivo do PWP é facilitar a comunicação entre pares vizinhos com o objetivo de compartilhar o conteúdo do arquivo. O PWP descreve as etapas executadas por um peer após ele ter lido em um arquivo metainfo e contatado um rastreador para coletar informações sobre outros pares com os quais ele pode se comunicar. O PWP é sobreposto ao TCP e manipula toda a sua comunicação usando mensagens assíncronas.
+
+6.1 Diretrizes do Fio Peer (Peer Wire Guidelines)
+
+O PWP não especifica um algoritmo padrão para selecionar elementos de um par vizinho de clientes com quem compartilhar partes, embora se espere que as seguintes diretrizes sejam observadas por qualquer um desses algoritmos:
+
+	O algoritmo não deve ser construído com o objetivo em mente de reduzir a quantidade de dados carregados em comparação com os baixados. No mínimo, um colega deve carregar a mesma quantia que baixou.
+
+	O algoritmo não deve usar um esquema rígido tit-for-tat ao lidar com pares remotos que acabaram de se juntar ao enxame e, portanto, não têm peças para oferecer.
+
+	O algoritmo deve fazer um bom uso da largura de banda de download e upload, colocando um limite no número de conexões simultâneas que enviam ou recebem dados ativamente. Ao reduzir o número de conexões ativas, o congestionamento do TCP pode ser evitado.
+
+	O algoritmo deve encaminhar solicitações de dados em ordem para saturar as conexões ativas.
+
+	O algoritmo deve ser capaz de cooperar com pares que implementam um algoritmo diferente.
+
+6.2 Aperto de Mãos (Handshaking)
+
+O par local abre uma porta na qual você pode escutar conexões de entrada de peers remotos. Essa porta é então relatada ao rastreador. Como o BTP/1.0 não especifica nenhuma porta padrão para escutar, é responsabilidade exclusiva da implementação selecionar uma porta.
+
+Qualquer ponto remoto que deseje se comunicar com o par local deve abrir uma conexão TCP com essa porta e executar uma operação de handshake. A operação de handshake DEVE ser executada antes que qualquer outro dado seja enviado do peer remoto. O par local NÃO DEVE enviar nenhum dado de volta ao par remoto antes que um aperto de mão bem construído tenha sido reconhecido de acordo com as regras abaixo. Se o handshake de alguma forma violar essas regras, o par local DEVE fechar a conexão com o peer remoto.
+
+Um handshake é uma cadeia de bytes com a seguinte estrutura:
+
+		----------------------------------------------------------------
+		| Name Length | Protocol Name | Reserved | Info Hash | Peer ID |
+		----------------------------------------------------------------
+
+Name Length:
+	O valor unsigned que o primeiro byte indica o comprimento de uma cadeia de caracteres que contém o nome do protocolo. No BTP/1.0 esse número é 19. O peer local sabe seu próprio nome de protocolo e, portanto, também o comprimento dele. Se esse comprimento for diferente do valor desse primeiro byte, a conexão DEVE ser eliminada.
+
+Protocol Name:
+	Esta é uma cadeia de caracteres que DEVE conter o nome exato do protocolo em ASCII e ter o mesmo tamanho que o indicado no campo Name Length. O nome do protocolo é usado para identificar no par local qual versão do BTP o par remoto usa. No BTP/1.0 o nome é 'BitTorrent protocol'. Se essa cadeia for diferente do nome do protocolo do próprio local, a conexão deve ser descartada.
+
+Reserved:
+	Os próximos 8 bytes da string são reservados para extensões futuras e devem ser lidos sem interpretação.
+
+Info Hash:
+	Os próximos 20 bytes na string devem ser interpretados como um SHA1 de 20 bytes da informação da chave no arquivo metainfo. Presumivelmente, como o peer local e o remoto entraram em contato com o rastreador como resultado da leitura no mesmo arquivo .torrent, o par local reconhecerá o valor do hash de informações e poderá servir ao par remoto. Se este não for o caso, a conexão DEVE ser cancelada. Essa situação pode ocorrer se o par local decidir deixar de atender ao arquivo em questão por algum motivo. O hash de informações pode ser usado para permitir que o cliente atenda a vários torrents na mesma porta.
+     Neste estágio, se a conexão não tiver sido interrompida, o parceiro local DEVE enviar seu próprio handshake de volta, incluindo a última etapa:
+
+Peer ID:
+		Os últimos 20 bytes do handshake devem ser interpretados como o nome auto-designado do peer. O par local deve usar esse nome para identificar a conexão a seguir. Assim, se este nome coincidir com o nome do ID do peer local, a conexão DEVE ser eliminada. Além disso, se algum outro par já se identificou com o par local usando esse mesmo ID de mesmo nível, a conexão DEVE ser descartada.
+
+No BTP/1.0, o handshake tem um total de 68 bytes.
+
+6.3 Comunicação de Mensagem (Message Communication)
+
+Após o handshake PWP, ambas as extremidades do canal TCP podem enviar mensagens umas para as outras de maneira completamente assíncrona. As mensagens PWP têm o duplo propósito de atualizar o estado dos pares vizinhos em relação às mudanças no par local, bem como a transferência de blocos de dados entre pares vizinhos.
+
+Mensagens PWP caem em duas categorias diferentes:
+
+	Mensagens Orientadas por Estado (State-oriented messages):
+		Essas mensagens têm o único propósito de informar os pares de mudanças no estado de seus pares vizinhos. Uma mensagem deste tipo DEVE ser enviada sempre que ocorrer uma alteração no estado de um par, independentemente do estado dos outros pares. As seguintes mensagens se enquadram nesta categoria: Interessado, Desinteressado, Bloqueado, Não Marcado, Tem e Bitfield (Interested, Uninterested, Choked, Unchoked, Have and Bitfield).
+
+	Mensagens Orientadas a Dados (Data-oriented messages):
+		Essas mensagens tratam da solicitação e do envio de partes de dados. As seguintes mensagens se enquadram nesta categoria: Solicitação, Cancelar e Peça (Request, Cancel and Piece).
+
+6.3.1 Estado dos Peer
+	
+Para cada extremidade de uma conexão, um par deve manter os dois sinalizadores de estado a seguir:
+
+	Choked (Sufocado):
+		Quando true, esse flag significa que o par sufocado não tem permissão para solicitar dados.
+	Interested (Interessado):
+		Quando true, esse flag significa que um par está interessado em solicitar dados de outro par. Isso indica que o par começará a solicitar blocos se estiver livre (Unchocked).
+
+Um par sufocado (Choked) não deve enviar nenhuma mensagem orientada a dados, mas está livre para enviar qualquer outra mensagem ao par que está o sufocando. Se um par sufoca um peer remoto, ele também DEVE descartar qualquer solicitação não atendida por blocos recebidos anteriormente do peer remoto.
+
+Um par não-sufocado tem permissão para enviar mensagens orientadas a dados para o peer remoto. É deixado para a implementação quantos pares um determinado peer pode escolher para sufocar ou desufocar, e de que forma. Isso é feito deliberadamente para permitir que os pares usem diferentes heurísticas para a seleção de pares.
+
+Um par interessado indica ao par remoto que ele deve esperar receber mensagens orientadas a dados assim que desufocar o par interessado. Deve-se notar que um par não deve assumir que um par remoto está interessado apenas porque possui partes que o par remoto está faltando. Pode haver razões válidas para que um par não esteja interessado em outro par além dos baseados em dados.
+
+6.3.2 Mensangens do Fio do Par (Peer Wire Messages):
+
+Todos os membros inteiros em mensagens PWP são codificados como um número big-endian de 4 bytes. Além disso, todos os membros de índice e deslocamento em mensagens PWP são baseados em zero.
+
+Uma mensagem PWP tem a seguinte estrutura:
+
+		-----------------------------------------
+		| Message Length | Message ID | Payload |
+		-----------------------------------------
+
+Message Length:
+	Este é um inteiro que denota o comprimento da mensagem, excluindo a própria parte do comprimento. Se uma mensagem não tem payload, seu tamanho é 1. Mensagens de tamanho 0 podem ser enviadas periodicamente como mensagens keep-alive. Além do limite que os quatro bytes impõem ao comprimento da mensagem, o BTP não especifica um limite máximo para esse valor. Assim, uma implementação pode optar por especificar um limite diferente e, por exemplo, desconectar um ponto remoto que deseja se comunicar usando um tamanho de mensagem que colocaria muita pressão sobre os recursos do par local.
+
+Message ID:
+	Este é um valor de um byte, indicando o tipo da mensagem. BTP/1.0 especifica 9 mensagens diferentes, como pode ser visto mais abaixo.
+
+Payload:
+	O Payload (Carga Útil) é um fluxo de bytes de comprimento variável.
+
+Se uma mensagem recebida de alguma forma viola esta estrutura, então a conexão deve ser descartada. Em particular, o receptor deve certificar-se de que o ID da mensagem constitui uma mensagem válida, e a carga útil corresponde à carga útil esperada, conforme indicado abaixo.
+
+Para fins de compatibilidade com futuras extensões de protocolo, o cliente DEVE ignorar mensagens desconhecidas. Podem surgir situações em que um cliente pode optar por deixar cair uma conexão depois de receber uma mensagem desconhecida, seja por motivos de segurança, seja porque o descarte de mensagens desconhecidas grandes pode ser visto como um desperdício excessivo.
+
+BTP/1.0 especifica as seguintes mensagens:
+
+6.3.3 Choke (Sufocado):
+Esta mensagem tem ID 0 e não há carga. Um peer envia esta mensagem para um par remoto para informar ao par remoto que está sendo bloqueado.
+
+6.3.4 Unchoke (Desufocado):
+Esta mensagem tem o ID 1 e não há carga. Um peer envia esta mensagem para um par remoto para informar ao par remoto que ele não está mais sendo bloqueado.
+
+6.3.5 Interested (Interessado):
+Esta mensagem tem o ID 2 e não tem carga. Um peer envia esta mensagem para um peer remoto para informar o peer remoto de seu desejo de solicitar dados.
+
+6.3.6 Uninterested (Desinteressado):
+Esta mensagem tem o ID 3 e não há carga. Um peer envia esta mensagem para um par remoto para informar que não está interessado em nenhuma parte do peer remoto.
+
+6.3.7 Have (Ter):
+Esta mensagem tem ID 4 e uma carga útil de tamanho 4. A carga útil é um número que indica o índice de uma peça que o peer fez o download e validou com sucesso. Um par que recebe essa mensagem deve validar o índice e descartar a conexão se esse índice não estiver dentro dos limites esperados. Além disso, um par que recebe esta mensagem DEVE enviar uma mensagem interessada ao remetente, se realmente não tiver a peça anunciada. Além disso, também pode enviar um pedido para essa peça.
+
+6.3.8 Bitfield (Campo de Bit):
+Esta mensagem tem o ID 5 e um comprimento de carga útil variável. A carga útil é um campo de bits que representa as partes que o remetente transferiu com sucesso, com o bit alto no primeiro byte correspondendo ao índice de peça 0. Se um bit for apagado, ele deve ser interpretado como uma peça faltante. Um par deve enviar esta mensagem imediatamente após a operação de handshake, e pode optar por não enviá-lo se não tiver peças. Esta mensagem NÃO DEVE ser enviada a qualquer momento durante a comunicação.
+
+6.3.9 Request (Requisição):
+Esta mensagem tem ID 6 e uma carga útil de tamanho 12. A carga útil é de 3 valores inteiros, indicando um bloco dentro de uma peça que o remetente está interessado em baixar do destinatário. O destinatário DEVE enviar somente mensagens remetidas a um remetente que já tenha solicitado, e somente de acordo com as regras acima mencionadas sobre o afogador e os estados interessados. A carga útil tem a seguinte estrutura:
+
+		---------------------------------------------
+		| Piece Index | Block Offset | Block Length |
+		---------------------------------------------
+
+6.3.10 Piece (Peça):
+Esta mensagem tem o ID 7 e uma carga útil de comprimento variável. A carga útil contém 2 inteiros indicando de qual peça e com qual deslocamento os dados de bloco no terceiro membro são derivados. Observe que o comprimento dos dados é implícito e pode ser calculado subtraindo 9 do comprimento total da mensagem. A carga útil tem a seguinte estrutura:
+
+		-------------------------------------------
+		| Piece Index | Block Offset | Block Data |
+		-------------------------------------------
+
+6.3.11 Cancel (Cancelar):
+Esta mensagem tem ID 8 e uma carga útil 12. A carga útil é de 3 valores inteiros indicando um bloco dentro de uma peça que o remetente solicitou, mas não está mais interessada. O destinatário DEVE apagar as informações da solicitação ao receber essas mensagens. A carga útil tem a seguinte estrutura:
+
+		---------------------------------------------
+		| Piece Index | Block Offset | Block Length |
+		---------------------------------------------
+
+6.4 The End Game (O fim do jogo):
+No final de uma sessão de download, pode acelerar o download para enviar mensagens de solicitação para os blocos restantes para todos os pares vizinhos. Um cliente deve emitir mensagens de cancelamento para todas as solicitações pendentes enviadas aos pares vizinhos assim que uma parte for baixada com sucesso. Isto é referido como o jogo final.
+
+Um cliente geralmente envia solicitações de blocos em etapas; envio de pedidos para blocos mais novos, à medida que respostas de solicitações anteriores são recebidas. O cliente entra no jogo final, quando todos os blocos restantes foram solicitados.
+
+6.5 Piece Selection Strategy (Estratégia de Seleção das Peças):
+O BTP/1.0 não força uma ordem específica para selecionar quais partes baixar. No entanto, a experiência mostra que o download em ordem mais rara parece diminuir o tempo de espera das peças. Para encontrar a parte mais rara, um cliente deve calcular para cada índice de peça o número de vezes que esse índice é verdadeiro nos vetores de campo de bits de todos os pares vizinhos. A peça com a menor soma é então selecionada para solicitação.
+
+6.6 Peer Selection Strategy (Estratégia de Seleção do Par):
+Esta seção descreve o algoritmo de afogamento recomendado para selecionar pares vizinhos com quem trocar peças. Implementações são livres para implementar qualquer estratégia, desde que as diretrizes da Seção 6.1 sejam observadas.
+
+Após o handshake inicial, ambas as extremidades de uma conexão setam a flag Choked como true e a flag Interested como false.
+
+Todas as conexões são classificadas periodicamente em termos de capacidade de fornecer ao cliente uma taxa de download melhor. A classificação pode levar em consideração fatores como a disposição dos pares remotos de manter uma conexão não-processada com o cliente durante um determinado período de tempo, a taxa de upload de peers remotos para o cliente e outros critérios definidos pela implementação.
+
+Os pares são classificados de acordo com sua classificação em relação ao esquema acima. Suponha que apenas 5 peers possam fazer o download ao mesmo tempo. O algoritmo de seleção de pares irá desarmar o maior número possível de pares de melhor classificação, de modo que exatamente 5 deles estejam interessados. Se um dos pares mais bem avaliados numa fase posterior se interessar, o algoritmo de seleção de pares irá sufocar o pior ponto não-processado. Observe que o pior peer não processado está sempre interessado.
+
+O único elemento faltante do algoritmo acima é a capacidade de garantir que novos pares possam ter uma boa chance de fazer o download de uma peça, mesmo que eles avaliem mal no esquema acima. Um método simples é garantir que um peer aleatório seja selecionado periodicamente, independentemente de como ele é avaliado. Como esse processo é repetido de uma maneira round robin, ele garante que, em última análise, até mesmo novos pares terão uma chance de ficarem desocupados.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+7 Consideração de Segurança
+
+Esta seção examina considerações de segurança para o BTP/1.0. A discussão não inclui soluções definitivas para os problemas revelados, embora faça algumas sugestões para reduzir os riscos de segurança.
+
+7.1 Problemas do Protocolo HTTP do Tracker (Tracker HTTP Protocol Issues):
+
+O uso do protocolo HTTP para comunicação entre o rastreador e o cliente torna o BTP/1.0 vulnerável aos ataques mencionados na seção de considerações de segurança do RFC 2616[6].
+
+7.2 Ataques de Negação de Serviço nos Trackers:
+
+A natureza do rastreador é servir muitos clientes. Ao montar um ataque de negação de serviço contra o rastreador, o enxame preso ao rastreador pode ficar com fome. Esse tipo de ataque é difícil de ser defendido, no entanto, o arquivo metainfo permite que vários rastreadores sejam especificados, tornando possível distribuir a carga em vários rastreadores e, assim, conter esse ataque.
+
+7.3 Problema de Identidade dos Pares:
+
+Não há autenticação forte de clientes quando eles entram em contato com o rastreador. A principal opção para os rastreadores é verificar a identificação dos pares e o endereço IP do cliente. A falta de autenticação pode ser usada para montar um ataque em que um cliente pode encerrar outro cliente se os dois clientes estiverem executando no mesmo host e, portanto, estiverem compartilhando o mesmo endereço IP. Além disso, um par desonesto pode mascarar sua identidade usando vários IDs pares. Os clientes devem abster-se de levar o ID do par ao valor nominal.
+
+7.4 DNS Spoofing:
+
+Os clientes que usam o BTP/1.0 dependem muito do DNS, que pode ser usado para especificar o URI do rastreador e como entrar em contato com um par. Os clientes são, portanto, geralmente propensos a ataques de segurança com base na associação incorreta deliberada de endereços IP e nomes DNS. Os clientes precisam ser cautelosos ao assumir a validade contínua de uma associação de endereço IP/nome.
+
+Em particular, os clientes BTP/1.0 DEVEM confiar no seu servidor resolvedor de nomes para confirmação de uma associação de número de IP/nome, em vez de armazenar em cache o resultado de pesquisas anteriores de nome de host. Se os clientes armazenarem em cache os resultados das pesquisas de nomes de host para obter uma melhoria de desempenho, eles DEVEM observar as informações de TTL informadas pelo DNS.
+
+Se os clientes não observarem essa regra, eles poderão ser falsificados (spoofed) quando um endereço IP dos usuários ou rastreadores acessados anteriormente for alterado. Como é esperado que a renomeação da rede se torne cada vez mais comum, de acordo com a RFC 1900[2], a possibilidade desta forma de ataque crescerá. Observar esse requisito reduz essa possível vulnerabilidade de segurança.
+
+7.5 Problemas com nomes de arquivos e diretórios:
+
+O arquivo metainfo fornece uma maneira de sugerir um nome do arquivo baixado para torrents de arquivo único e o diretório mais importante para torrents de arquivos múltiplos. Essa funcionalidade é muito parecida com o campo de cabeçalho Content-Disposition documentado no RFC 2183[4] e as considerações de segurança mencionadas neste RFC também se aplicam aos clientes BitTorrent. Em suma, os clientes BTP devem verificar se os nomes dos arquivos sugeridos no arquivo metainfo não comprometem os serviços no sistema local. Além disso, deve-se ter cuidado com torrents de arquivos múltiplos para validar que arquivos individuais são relativos ao diretório mais alto e que os caminhos não contêm elementos de caminho para o pai (que são elevadores de diretórios como ``..''), que pode ser usado para colocar arquivos fora do diretório mais alto.
+
+Usando o UNIX como exemplo, alguns perigos seriam:
+	Criando arquivos de inicialização (por exemplo, ".login").
+	Criando ou sobrescrevendo arquivos do sistema (por exemplo, "/etc/passwd").
+	Sobrescrevendo qualquer arquivo existente.
+	Colocar arquivos executáveis em qualquer caminho de pesquisa de comandos (por exemplo, "~/bin/more").
+	Enviando o arquivo para um pipe (por exemplo, "| sh").
+
+É muito importante notar que esta não é uma lista exaustiva; Pretende-se como um pequeno conjunto de exemplos apenas. Os implementadores devem estar alertas para os possíveis perigos em seus sistemas de destino. Em geral, o cliente BTP NÃO DEVE nomear ou colocar arquivos de forma que eles sejam interpretados ou executados sem que o usuário inicie a ação explicitamente.
+
+7.6 Validando a integridade dos dados trocados entre pares
+
+Por padrão, todo o conteúdo servido ao cliente de outros colegas deve ser considerado contaminado e o cliente DEVE validar a integridade dos dados antes de aceitá-los. O arquivo metainfo contém informações para verificar as duas partes individuais usando SHA1 e, opcionalmente, arquivos individuais usando o MD5. SHA1, sendo o mais forte dos dois, é o preferido. Além disso, a confiança exclusiva na verificação de todo o arquivo pode potencialmente invalidar partes válidas e deve ser considerada apenas para arquivos pequenos, para limitar a quantidade de dados que estão sendo descartados.
+
+Confiar na validade do arquivo ou arquivos resultante acaba sendo uma questão de confiar no conteúdo do arquivo metainfo. Garantir a validade do arquivo metainfo está além do escopo deste documento.
+
+7.7 Transferência de informações confidenciais
+
+Alguns clientes incluem informações sobre si próprios ao gerar a string Peer ID. Os clientes devem estar cientes de que essa informação pode potencialmente ser usada para determinar se um cliente específico possui uma falha de segurança explorável.
+
+[1] 	Postel, J. and J. Reynolds, “File Transfer Protocol,” STD 9, RFC 959, October 1985.
+[2] 	Carpenter, B. and Y. Rekhter, “Renumbering Needs Work,” RFC 1900, February 1996.
+[3] 	Bradner, S., “Key words for use in RFCs to Indicate Requirement Levels,” BCP 14, RFC 2119, March 1997 (TXT, HTML, XML).
+[4] 	Troost, R., Dorner, S., and K. Moore, “Communicating Presentation Information in Internet Messages: The Content-Disposition Header Field,” RFC 2183, August 1997 (TXT, HTML, XML).
+[5] 	Crocker, D., Ed. and P. Overell, “Augmented BNF for Syntax Specifications: ABNF,” RFC 2234, November 1997 (TXT, HTML, XML).
+[6] 	Fielding, R., Gettys, J., Mogul, J., Frystyk, H., Masinter, L., Leach, P., and T. Berners-Lee, “Hypertext Transfer Protocol -- HTTP/1.1,” RFC 2616, June 1999 (TXT, PS, PDF, HTML, XML).
+
+
+Traduzido por Daniel Venturini em Apr 21 2018.

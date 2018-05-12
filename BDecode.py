@@ -26,7 +26,7 @@ class BDecode:
             raise FileNotFoundError
 
         #self.keys()
-        print(self.getMainDictionarie())
+        self.dict = self.getMainDictionarie()
 
     # the def is only to show the variables of the metainfo
     def keys(self):

@@ -1,7 +1,7 @@
 # -*- coding:ISO-8859-1 -*-
 
-from BDecode import BDecode
-from Intefaces import OpenFile
+from Interfaces import OpenFile
+from Interfaces import About
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -25,16 +25,23 @@ class Interface:
         self.windowMain.show_all()
 
         # create the object in the interface
+        self.menuabout = self.builder.get_object('menuabout')
         self.menuopen = self.builder.get_object('menuopen')
         self.menuquit = self.builder.get_object('menuquit')
 
-        #self.menuquit.connect('clicked', Gtk.main_quit)
-
         Gtk.main()
 
+    # menubar -> File -> open
     def openFile(self, widget):
         self.windowOpenFile = OpenFile()
 
+    # menubar -> File -> quit
+    def quit(self, widget):
+        self.windowMain.destroy()
+
+    # menubar -> Help -> about
+    def about(self, widget):
+        About()
 
 if __name__.__eq__('__main__'):
     Interface()

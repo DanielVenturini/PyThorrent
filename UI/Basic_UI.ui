@@ -49,6 +49,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <signal name="activate" handler="quit" swapped="no"/>
                       </object>
                     </child>
                   </object>
@@ -122,6 +123,7 @@
                         <property name="can_focus">False</property>
                         <property name="use_underline">True</property>
                         <property name="use_stock">True</property>
+                        <signal name="activate" handler="about" swapped="no"/>
                       </object>
                     </child>
                   </object>

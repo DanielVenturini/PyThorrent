@@ -1,6 +1,6 @@
 # -*- coding:ISO-8859-1 -*-
 
-from Interfaces import OpenFile
+import openFile
 from Interfaces import About
 
 import gi
@@ -33,7 +33,7 @@ class Interface:
 
     # menubar -> File -> open
     def openFile(self, widget):
-        self.windowOpenFile = OpenFile()
+        openFile.openFile()
 
     # menubar -> File -> quit
     def quit(self, widget):

@@ -19,6 +19,7 @@ class BDecode:
             self.file = open(nameFile, 'rb')
         except FileNotFoundError:
             self.file = None
+            raise FileNotFoundError
 
     def decodeFullFile(self):
         if(not self.file):

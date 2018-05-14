@@ -8,8 +8,14 @@ O decode do padrao BENCODE esta 100% funcionando. Para usar em qualquer arquivo 
 
 Adições dos recursos (mais antigos por ultimo):
 
+- Implementação da interface para abrir arquivos e mostrando as informações de torrents de arquivo único - por enquanto.
+
+- Verificando a validade dos arquivos com base nas suas respectivas chaves.
+
+- Implementação da interface principal do programa.
+
 - Implementado o Decode para obter os SHA-1 das peças do torrent. DECODE BENCODE 100% works.
 
 - Implementaçao do Decode apenas para arquivos normais.
 
-- Decode completo para arquivos UTF8
+- Decode completo para arquivos UTF8.

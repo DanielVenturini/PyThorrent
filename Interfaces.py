@@ -24,7 +24,7 @@ class openFileInterface:
 
         # create the object in the interface
         self.buttomOkReadFile = self.builder.get_object('buttomOkReadFile')
-        self.entryReadFile = self.builder.get_object('entryReadFile')
+        self.filechooserbutton = self.builder.get_object('filechooserbutton')
         self.gridFile = self.builder.get_object('gridFile')
 
 class About:

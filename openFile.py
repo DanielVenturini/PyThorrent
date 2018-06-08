@@ -25,7 +25,7 @@ class openFile:
     # when click the button to ok read file
     def readFile(self, widget):
         try:
-            fileName = self.window.entryReadFile.get_text()
+            fileName = self.window.filechooserbutton.get_filename()
             print("Tentando ler o arquivo " + fileName)
             self.decode = BDecode(fileName)
             self.decode.decodeFullFile()
@@ -48,9 +48,6 @@ class openFile:
             self.insertInGrid('Arquivo invalido', '-')
             return
 
-        print("Arquio valido")
-
-        # printar todos os arquivos agora
         self.printFiles()
 
     #def printar tudo

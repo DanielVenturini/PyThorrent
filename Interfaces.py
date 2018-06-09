@@ -27,6 +27,31 @@ class openFileInterface:
         self.filechooserbutton = self.builder.get_object('filechooserbutton')
         self.gridFile = self.builder.get_object('gridFile')
 
+        # posicion in the grid to insert the next namefile and size
+        self.line = 2
+
+    # clear all content in the grid
+    def clearGrid(self):
+
+        while(self.line >= 3):
+            self.line -= 1
+            self.gridFile.remove_row(self.line)
+
+
+    # insert name file and size in the grid
+    def insertInGrid(self, file, size):
+        label = Gtk.Label()
+        label.set_text(file)
+
+        label2 = Gtk.Label()
+        label2.set_text(size)
+
+        self.gridFile.attach(label, 0, self.line, 1, 1)
+        self.gridFile.attach(label2, 1, self.line, 1, 1)
+        self.gridFile.show_all()
+
+        self.line += 1
+
 class About:
 
     def __init__(self):

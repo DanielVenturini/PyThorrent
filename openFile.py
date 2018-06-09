@@ -16,14 +16,13 @@ class openFile:
         self.window.buttomOkReadFile.connect('clicked', self.readFile)
         print("ja foi pra clicar")
 
-        # line to insert the name and size in the grid. Start in the line 2
-        self.line = 2
-
         # start UI
         Gtk.main()
 
     # when click the button to ok read file
     def readFile(self, widget):
+        self.window.clearGrid()
+
         try:
             fileName = self.window.filechooserbutton.get_filename()
             print("Tentando ler o arquivo " + fileName)
@@ -146,16 +145,7 @@ class openFile:
 
     # dinamic insert in the grid the file name and size
     def insertInGrid(self, file, size):
-        label = Gtk.Label()
-        label.set_text(file)
-
-        label2 = Gtk.Label()
-        label2.set_text(size)
-
-        self.window.gridFile.attach(label, 0, self.line, 1, 1)
-        self.window.gridFile.attach(label2, 1, self.line, 1, 1)
-        self.window.gridFile.show_all()
-        self.line += 1
+        self.window.insertInGrid(file, size)
 
 
     # 'translate' the bytes of file to a real size: kB, MB, GB

@@ -8,7 +8,7 @@ O decode do padrao BENCODE esta 100% funcionando. Para usar em qualquer arquivo 
 
 Adições dos recursos (mais antigos por ultimo):
 
-- Implementação da interface para abrir arquivos e mostrando as informações de torrents de arquivo único - por enquanto.
+- Implementação da interface para abrir arquivos e mostrando as informações de torrents.
 
 - Verificando a validade dos arquivos com base nas suas respectivas chaves.
 

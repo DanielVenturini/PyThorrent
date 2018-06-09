@@ -31,6 +31,7 @@ class openFile:
             self.decode.decodeFullFile()
             print("Ja leu")
         except FileNotFoundError:
+            print("Erro no readFile")
             self.insertInGrid('Arquivo nao encontrado.', '-')
             return
 
@@ -50,7 +51,20 @@ class openFile:
 
         self.printFiles()
 
+    # each position in the listPath is one path at final file
+    def getFullPath(self, listPath):
+
+        fullPath = ''
+        for path in listPath:
+            fullPath += ('/' + path)
+
+        return fullPath
+
     #def printar tudo
+    def printAllFiles(self, listOfFiles):
+        # the keys for each file
+        for file in listOfFiles:
+            self.insertInGrid(self.getFullPath(file['path']), self.getSize(file['length']))
 
     # verify the main keys of file
     def verifyMainKeys(self):
@@ -61,6 +75,7 @@ class openFile:
             self.info = self.dict['info']
             return True
         except KeyError:
+            print("Erro no mainKeys")
             return False
 
 
@@ -71,6 +86,7 @@ class openFile:
             self.info['files']
             return self.verifyAllKeysOfFiles()
         except KeyError:
+            print("Erro no verifyKeysOfInfo")
             return self.verifyKeysOfFile(self.info)
 
 
@@ -83,12 +99,13 @@ class openFile:
             self.info['name']
 
             # the keys for each file
-            for file in self.info['file']:
+            for file in self.info['files']:
                 file['length']
                 file['path']
 
             return True
-        except KeyError:
+        except Exception as error:
+            print("Erro no verifyAllKeysOfFiles: " + str(error))
             return False
 
 
@@ -101,6 +118,7 @@ class openFile:
             file['name']
             return True
         except KeyError:
+            print("Erro no verifyKeysOfFile")
             return False
 
     # insert all file and size in the grid
@@ -115,8 +133,7 @@ class openFile:
     def printFiles(self):
         try:
             # if has this key, the torrent has two or more files
-            self.info['files']
-            return self.printAllFiles()
+            return self.printAllFiles(self.info['files'])
         except KeyError:
             return self.printOneFile(self.info)
 

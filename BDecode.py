@@ -41,7 +41,8 @@ class BDecode:
 
     # read one byte and decode to string
     def read(self):
-        return self.file.read(1).decode()
+        # some torrent has coding 'no-utf8'
+        return self.file.read(1).decode('ISO8859-1')
 
 
     # since everything is inside a dictionary

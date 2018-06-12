@@ -62,20 +62,56 @@ def createAndInsertLines(fileName, lines):
     file.close()
 
 # get the port which the client is hear for new connections
-def getPort(fileName):
+def getPort():
     try:
-        # read the firsts 4 bytes from first line
-        port = openAndRead('../configures/'+fileName, line=0, at=5)
+        # read the firsts 4 bytes from second line
+        # because the first line is the peer id
+        port = openAndRead('../configures/configure.pt', line=1, at=5)
         if(port.__eq__('')):
             raise FileNotFoundError
         else:
             return port
 
     except FileNotFoundError:
+        # create file 'configure.pt'
+        # and add in first line the peer id
+        # and second line the port
         port = list()
+        port.append(createPeerId())
         port.append(str(randint(10000, 65535)))
 
-        createAndInsertLines(fileName, port)
-        return getPort(fileName)
+        createAndInsertLines('configure.pt', port)
+        return getPort()
 
 
+# this def get the attr of bytes transfered
+def getProperties(torrentName, totalBytes):
+    try:
+        uploaded = openAndRead('../configures/' + torrentName, line=0, at=-1)
+        downloaded = openAndRead('../configures/' + torrentName, line=1, at=-1)
+        left = openAndRead('../configures/' + torrentName, line=2, at=-1)
+
+        return uploaded, downloaded, left
+    except FileNotFoundError:
+        # if file not exists, create one file with:
+        # first line is total uploaded
+        # seconde line is total downloaded
+        # third line is total remaining to complete download
+        createAndInsertLines(torrentName + 'pt', [0, 0, totalBytes])
+
+        return 0, 0, totalBytes
+
+
+# this def get the full file of torrent
+def getFullLefFile(dict):
+    try:
+        return dict['info']['length']
+    except KeyError:
+        # if has a error, then is multiple files
+        fullSize = 0
+
+        for file in dict['info']['files']:
+            fullSize += file['length']
+
+        print("Tamanho total do arquivo: " + str(fullSize))
+        return fullSize

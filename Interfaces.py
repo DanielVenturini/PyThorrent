@@ -27,7 +27,7 @@ class openFileInterface:
         self.filechooserbutton = self.builder.get_object('filechooserbutton')
         self.gridFile = self.builder.get_object('gridFile')
 
-        # posicion in the grid to insert the next namefile and size
+        # position in the grid to insert the next namefile and size
         self.line = 2
 
     # clear all content in the grid

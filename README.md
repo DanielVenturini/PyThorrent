@@ -1,4 +1,4 @@
-# PyThorrent
+# PyTorrent
 
 Implementação de um programa para compartilhamento de arquivos ponto-a-ponto (P2P) usando o protocolo BitTorrent Protocol: BTP/1.0
 
@@ -7,6 +7,8 @@ A pasta example.torrent contem arquivos de teste. O arquivo onlyonefile.torrent 
 O decode do padrao BENCODE esta 100% funcionando. Para usar em qualquer arquivo .torrent: from BDecode import DBdecode -> BDecode('path/namefile').decodeFullFile()
 
 Adições dos recursos (mais antigos por ultimo):
+
+- Mecanismo de geração do peer id e recuperação do peer id.
 
 - Implementação da interface para abrir arquivos e mostrando as informações de torrents.
 

@@ -50,6 +50,7 @@ class openFile:
 
         self.printFiles()
 
+
     # each position in the listPath is one path at final file
     def getFullPath(self, listPath):
 
@@ -57,13 +58,15 @@ class openFile:
         for path in listPath:
             fullPath += ('/' + path)
 
-        return fullPath
+        # return without the first '/'
+        return fullPath[1:]
 
     #def printar tudo
     def printAllFiles(self, listOfFiles):
         # the keys for each file
         for file in listOfFiles:
             self.insertInGrid(self.getFullPath(file['path']), self.getSize(file['length']))
+
 
     # verify the main keys of file
     def verifyMainKeys(self):
@@ -73,7 +76,7 @@ class openFile:
             self.dict['announce']
             self.info = self.dict['info']
             return True
-        except KeyError:
+        except (KeyError, TypeError):
             print("Erro no mainKeys")
             return False
 
@@ -129,12 +132,14 @@ class openFile:
             # torrent with only one file
             file = self.decode.dict['info']
 
+
     def printFiles(self):
         try:
             # if has this key, the torrent has two or more files
             return self.printAllFiles(self.info['files'])
         except KeyError:
             return self.printOneFile(self.info)
+
 
     def printOneFile(self, info):
         size = self.getSize(info['length'])

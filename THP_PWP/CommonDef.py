@@ -17,10 +17,16 @@ def getPeerId():
         if(peerId.startswith('-PT')):
             return peerId
         else:
-            return createAndInsertPeerId()
+            lines = list()
+            lines.append(createPeerId())
+            createAndInsertLines('configure.pt', lines)
+            return getPeerId()
 
     except FileNotFoundError:
-        return createAndInsertPeerId()
+        lines = list()
+        lines.append(createPeerId())
+        createAndInsertLines('configure.pt', lines)
+        return getPeerId()
 
 # fileName is the file to read; line is the line to start read
 # len is the total bytes to read from specify line
@@ -43,15 +49,33 @@ def openAndRead(fileName='', line=0, at=0):
     finally:
         file.close()
 
-# if the file configures/configure.pt not exists
-# create it and insert in first line the peer id
-def createAndInsertPeerId():
+# if the file configures/'fileName' not exists
+# create it and insert all lines
+def createAndInsertLines(fileName, lines):
     if not os.path.exists('../configures/'):
         os.makedirs('../configures/')
 
-    peerId = createPeerId()
+    file = open('../configures/'+fileName, 'w+')
+    for line in lines:
+        file.write(line + '\n')
 
-    configureFile = open('../configures/configure.pt', 'w+')
-    configureFile.write(peerId)
-    configureFile.close()
-    return peerId
+    file.close()
+
+# get the port which the client is hear for new connections
+def getPort(fileName):
+    try:
+        # read the firsts 4 bytes from first line
+        port = openAndRead('../configures/'+fileName, line=0, at=5)
+        if(port.__eq__('')):
+            raise FileNotFoundError
+        else:
+            return port
+
+    except FileNotFoundError:
+        port = list()
+        port.append(str(randint(10000, 65535)))
+
+        createAndInsertLines(fileName, port)
+        return getPort(fileName)
+
+

@@ -26,7 +26,7 @@ class THP(Thread):
         # ever when get the messagem, get this properties
         uploaded, downloaded, left = CommonDef.getProperties(self.torrentName, self.lenTorrent)
 
-        return 'GET ' + self.announce + ' HTTP/1.1\n' +\
+        return 'GET /announce HTTP/1.1\n' +\
                 'info_hash: ' + str(self.info_hash) + '\n' +\
                 'peer_id: ' + self.peer_id + '\n' +\
                 'port: ' + self.port + '\n' +\

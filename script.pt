@@ -1,0 +1,31 @@
+#----------decodifica o arquivo--------------------------------------------
+from BDecode import BDecode
+dec = BDecode('example.torrent/ubuntu-12.04.5-server-amd64.iso.torrent')
+dec.decodeFullFile()
+
+dict = dec.dict
+#--------calcula o sha1-----------------------------------------------------
+import hashlib
+import pickle
+def getSHA1(dict):
+        sha = hashlib.sha1()
+        sha.update(pickle.dumps(dict['info']))
+        return sha.hexdigest()
+
+#---------recupera as informacoes--------------------------------------------
+from THP_PWP import CommonDef
+announce = dict['announce']
+torrentName = dict['info']['name']
+lenTorrent = CommonDef.getFullLefFile(dict)
+info_hash = getSHA1(dict)
+peer_id = CommonDef.getPeerId()
+port = CommonDef.getPort()
+uploaded, downloaded, left = CommonDef.getProperties(torrentName, lenTorrent)
+#---------cria mensagem------------------------------------------------------
+mensagem = 'GET /announce HTTP/1.1\n' +\
+            'info_hash: ' + str(info_hash) + '\n' +\
+            'peer_id: ' + peer_id + '\n' +\
+            'port: ' + port + '\n' +\
+            'uploaded: ' + str(uploaded) + '\n' +\
+            'downloaded: ' + str(downloaded) + '\n' +\
+            'left: ' + str(left) + '\r\n\r\n'

@@ -1,6 +1,7 @@
 # -*- conding:ISO-8859-1 -*-
 
 from random import randint
+import socket
 import os
 
 def createPeerId():
@@ -86,6 +87,8 @@ def getPort():
 
 # this def get the attr of bytes transfered
 def getProperties(torrentName, totalBytes):
+    torrentName += '.pt'
+
     try:
         uploaded = openAndRead('../configures/' + torrentName, line=0, at=-1)
         downloaded = openAndRead('../configures/' + torrentName, line=1, at=-1)
@@ -97,7 +100,7 @@ def getProperties(torrentName, totalBytes):
         # first line is total uploaded
         # seconde line is total downloaded
         # third line is total remaining to complete download
-        createAndInsertLines(torrentName + 'pt', [0, 0, totalBytes])
+        createAndInsertLines(torrentName, ['0', '0', str(totalBytes)])
 
         return 0, 0, totalBytes
 
@@ -106,12 +109,13 @@ def getProperties(torrentName, totalBytes):
 def getFullLefFile(dict):
     try:
         return dict['info']['length']
-    except KeyError:
-        # if has a error, then is multiple files
+    except KeyError:            # if has a error, then is multiple files
         fullSize = 0
 
         for file in dict['info']['files']:
             fullSize += file['length']
 
-        print("Tamanho total do arquivo: " + str(fullSize))
         return fullSize
+
+def sendPackage(socket, ip, porta):
+    socket.socket(socket.AF_INET, socket.SOCK_STREAM)

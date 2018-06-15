@@ -1,6 +1,7 @@
 #----------decodifica o arquivo--------------------------------------------
 from BDecode import BDecode
-dec = BDecode('example.torrent/ubuntu-12.04.5-server-amd64.iso.torrent')
+#dec = BDecode('torrentsproibidos/velozes.torrent')
+dec = BDecode('example.torrent/ubuntu-18.04-desktop-amd64.iso.torrent')
 dec.decodeFullFile()
 
 dict = dec.dict
@@ -17,15 +18,80 @@ from THP_PWP import CommonDef
 announce = dict['announce']
 torrentName = dict['info']['name']
 lenTorrent = CommonDef.getFullLefFile(dict)
-info_hash = getSHA1(dict)
+#info_hash = getSHA1(dict)
 peer_id = CommonDef.getPeerId()
 port = CommonDef.getPort()
 uploaded, downloaded, left = CommonDef.getProperties(torrentName, lenTorrent)
+
+
+info_hash = 'd665acce64e708bcf497082f1ac61a69a9c0f5e5'
 #---------cria mensagem------------------------------------------------------
-mensagem = 'GET /announce HTTP/1.1\n' +\
-            'info_hash: ' + str(info_hash) + '\n' +\
-            'peer_id: ' + peer_id + '\n' +\
-            'port: ' + port + '\n' +\
-            'uploaded: ' + str(uploaded) + '\n' +\
-            'downloaded: ' + str(downloaded) + '\n' +\
-            'left: ' + str(left) + '\r\n\r\n'
+mensagem = 'GET ' + announce +'?' +\
+            'info_hash=' + str(info_hash) + '&' +\
+            'peer_id=' + peer_id + '&' +\
+            'port=' + str(port) + '&' +\
+            'uploaded=' + str(uploaded) + '&' +\
+            'downloaded=' + str(downloaded) + '&' +\
+            'left=' + str(left) + '&' +\
+            'event=started' +\
+            ' HTTP/1.1\r\n\r\n'
+#--------cria socket---------------------------------------------------------
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect(('torrent.ubuntu.com', 6969))
+s.send(mensagem.encode())
+s.recv(1024)
+s.close()
+#-------cria socket udp-----
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+ip, port = s.getsockname()
+s.bind((ip, port))
+s.sendto(mensagem.encode(), ('87.233.192.220', 6969))
+s.recvfrom(1024)
+s.close()
+------------------------------------------------------------------------------
+http://tracker.documentfoundation.org:6969/announce
+announce = '/announce'
+info_hash = 'e4be9e4db876e3e3179778b03e906297be5c8dbe'
+
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#s.bind(('192.168.0.105', 6969))
+s.connect(('tracker.documentfoundation.org', 6969))
+#s.sendto(mensagem.encode(), ('tracker.leechers-paradise.org', 6969))
+#s.recvfrom(100)
+s.send(mensagem.encode())
+s.recv(100)
+s.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+import hashlib
+
+# BUF_SIZE is totally arbitrary, change for your app!
+BUF_SIZE = 65536  # lets read stuff in 64kb chunks!
+
+sha1 = hashlib.sha1()
+
+with open('example.torrent/ubuntu-18.04-desktop-amd64.iso.torrent', 'rb') as f:
+    while True:
+        data = f.read(BUF_SIZE)
+        if not data:
+            break
+        sha1.update(data)
+
+sha1.hexdigest()

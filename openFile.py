@@ -2,6 +2,7 @@
 
 from Interfaces import openFileInterface
 from BDecode import BDecode
+from THP_PWP.THP import THP
 
 import gi
 gi.require_version("Gtk", "3.0")
@@ -14,27 +15,47 @@ class openFile:
 
         # add the event clicked to execute the def readFile
         self.window.buttomOkReadFile.connect('clicked', self.readFile)
-        print("ja foi pra clicar")
+
+        # add the event clicked to execute the def readFile
+        self.window.buttomDownload.connect('clicked', self.download)
+
+        # when click in download, the file must be validated
+        self.validate = False
 
         # start UI
         Gtk.main()
+
+    def download(self, Widget):
+        THP(self.dict).start()
+        self.window.windowOpenFile.close()
 
     # when click the button to ok read file
     def readFile(self, widget):
         self.window.clearGrid()
 
+        # if dosnt read file with sucess
+        sucessRead = False
+
         try:
             fileName = self.window.filechooserbutton.get_filename()
-            print("Tentando ler o arquivo " + fileName)
             self.decode = BDecode(fileName)
             self.decode.decodeFullFile()
-            print("Ja leu")
+            sucessRead = True
         except FileNotFoundError:
             print("Erro no readFile")
             self.insertInGrid('Arquivo nao encontrado.', '-')
-            return
+            sucessRead = False
+        except ValueError:
+            self.insertInGrid('Arquivo invalido', '-')
+            sucessRead = False
 
-        self.processFile()
+        if(sucessRead and self.processFile()):
+            sucessRead = True
+        else:
+            sucessRead = False
+
+        self.window.buttomDownload.set_visible(sucessRead)
+        self.validate = sucessRead
 
 
     # check all keys in the file
@@ -43,13 +64,13 @@ class openFile:
 
         if(not self.verifyMainKeys()):
             self.insertInGrid('Arquivo invalido', '-')
-            return
+            return False
         elif(not self.verifyKeysOfInfo()):
             self.insertInGrid('Arquivo invalido', '-')
-            return
+            return False
 
         self.printFiles()
-
+        return True
 
     # each position in the listPath is one path at final file
     def getFullPath(self, listPath):

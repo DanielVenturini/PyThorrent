@@ -23,10 +23,12 @@ class openFileInterface:
         self.windowOpenFile.show_all()
 
         # create the object in the interface
+        self.buttomDownload = self.builder.get_object('buttomDownload')
         self.buttomOkReadFile = self.builder.get_object('buttomOkReadFile')
         self.filechooserbutton = self.builder.get_object('filechooserbutton')
         self.gridFile = self.builder.get_object('gridFile')
 
+        self.buttomDownload.set_visible(False)
         # position in the grid to insert the next namefile and size
         self.line = 2
 

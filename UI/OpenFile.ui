@@ -156,7 +156,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="buttonDownload">
+          <object class="GtkButton" id="buttomDownload">
             <property name="label">gtk-go-down</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>

@@ -1,10 +1,10 @@
 #----------decodifica o arquivo--------------------------------------------
-from BDecode import BDecode
-#dec = BDecode('torrentsproibidos/velozes.torrent')
-dec = BDecode('example.torrent/ubuntu-18.04-desktop-amd64.iso.torrent')
+from Decode import Decode
+#dec = Decode('torrentsproibidos/velozes.torrent')
+dec = Decode('example.torrent/ubuntu-18.04-desktop-amd64.iso.torrent')
 dec.decodeFullFile()
 
-dict = dec.dict
+dic = dec.dic
 #--------calcula o sha1-----------------------------------------------------
 import hashlib
 import pickle

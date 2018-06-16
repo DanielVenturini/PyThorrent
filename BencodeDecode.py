@@ -4,15 +4,24 @@
 this decode get one file and decode your full content.
 The torrent file is perfect decoded using this class.
 
+The encode gets one object and return one string encoded.
+
 use:
---------------------------------------------------------------------
-- from BDecode import BDecode                                      -
-- BDecode('example.torrent/onlyonefile.torrent').decodeFullFile()  -
---------------------------------------------------------------------
+---------------------------------------------------------------------
+- from BencodeDecode import Decode                                  -
+- dec = Decode('path/file.torrent')                                 -
+- dec.decodeFullFile()                                              -
+- dec.dict['info']['name']                                          -
+-                                                                   -
+- Or                                                                -
+-                                                                   -
+- from BencodeDecode import Bencode                                 -
+- Bencode().encode([10, 'UTFPR', ['brasil']])                       -
+---------------------------------------------------------------------
 
 """
 
-class BDecode:
+class Decode:
 
     def __init__(self, nameFile):
         try:
@@ -27,17 +36,7 @@ class BDecode:
             raise FileNotFoundError
 
         #self.keys()
-        self.dict = self.getMainDictionarie()
-
-    # the def is only to show the variables of the metainfo
-    def keys(self):
-        # the keys of metainfo
-        self.creationdate = "THISVALUEISOPTIONAL"
-        self.announcelist = "THISVALUEISOPTIONAL"
-        self.createdby = "THISVALUEISOPTIONAL"
-        self.announce = "THISVALUEISREQUERID"
-        self.info = "THISVALUEISADICTIONARY"
-        self.comment = "THISVALUEISOPTIONAL"
+        self.dic = self.getMainDictionarie()
 
     # read one byte and decode to string
     def read(self):
@@ -160,3 +159,46 @@ class BDecode:
                 seqSHA = ''
 
         return listSHA
+
+class Bencode:
+#-------------------------------below are the defs to encode one string-------------------------------
+
+    # this def returns the first object encoded
+    def encode(self, object):
+        if (str.__instancecheck__(object)):
+            return str(object.__len__()) + ':' + object
+        elif (int.__instancecheck__(object)):
+            return 'i' + str(object) + 'e'
+        elif (list.__instancecheck__(object)):
+            return self.bencodeList(object)
+        elif (dict.__instancecheck__(object)):
+            return self.bencodeDictionaries(object)
+
+    def bencodeList(self, object):
+        # inicial identify
+        response = 'l'
+        for ob in object:
+            # encode each object
+            response += self.encode(ob)
+
+        response += 'e'
+        return response
+
+    def bencodeDictionaries(self, object):
+        # inicial identify
+        response = 'd'
+        keyCurrent = ''
+        value = None
+        for key in list(object.keys()):
+            # keys must be string
+            keyCurrent += str(key.__len__()) + ':' + key
+            mapped = self.encode(object[key])
+
+            response += (keyCurrent + mapped)
+
+            # 'clear' the variables
+            keyCurrent = ''
+            mapped = None
+
+        response += 'e'
+        return response

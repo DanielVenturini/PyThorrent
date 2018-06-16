@@ -1,7 +1,7 @@
 # -*- coding:ISO-8859-1 -*-
 
 from Interfaces import openFileInterface
-from BDecode import BDecode
+from BencodeDecode import Decode
 from THP_PWP.THP import THP
 
 import gi
@@ -38,7 +38,7 @@ class openFile:
 
         try:
             fileName = self.window.filechooserbutton.get_filename()
-            self.decode = BDecode(fileName)
+            self.decode = Decode(fileName)
             self.decode.decodeFullFile()
             sucessRead = True
         except FileNotFoundError:
@@ -60,7 +60,7 @@ class openFile:
 
     # check all keys in the file
     def processFile(self):
-        self.dict = self.decode.dict
+        self.dict = self.decode.dic
 
         if(not self.verifyMainKeys()):
             self.insertInGrid('Arquivo invalido', '-')
@@ -148,10 +148,10 @@ class openFile:
     def insertFilesInGrid(self):
         try:
             # torrent with two files or more
-            files = self.decode.dict['info']['files']
+            files = self.decode.dic['info']['files']
         except:
             # torrent with only one file
-            file = self.decode.dict['info']
+            file = self.decode.dic['info']
 
 
     def printFiles(self):

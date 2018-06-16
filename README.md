@@ -4,9 +4,13 @@ Implementação de um programa para compartilhamento de arquivos ponto-a-ponto (
 
 A pasta example.torrent contem arquivos de teste. O arquivo onlyonefile.torrent eh apenas uma foto para torrnet. O arquivo 'text.decode' eh o que esta funcionando para o decode.
 
-O decode do padrao BENCODE esta 100% funcionando. Para usar em qualquer arquivo .torrent: from BDecode import DBdecode -> BDecode('path/namefile').decodeFullFile()
+O decode e o bencode do padrao BENCODE esta 100% funcionando. Para usar em qualquer arquivo .torrent: from Decode import DBdecode -> Decode('path/namefile').decodeFullFile()
 
 Adições dos recursos (mais antigos por ultimo):
+
+- Bencode encodificando um objecto para gerar o SHA1 do dic['info'].
+
+- Requisitando ao Tracker a lista de peers.
 
 - Mecanismo de geração do peer id e recuperação do peer id.
 

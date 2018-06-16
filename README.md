@@ -8,7 +8,9 @@ O decode e o bencode do padrao BENCODE esta 100% funcionando. Para usar em qualq
 
 Adições dos recursos (mais antigos por ultimo):
 
-- Bencode encodificando um objecto para gerar o SHA1 do dic['info'].
+- Obtendo SHA1 da 'info'.
+
+- Bencode encodificando um objecto.
 
 - Requisitando ao Tracker a lista de peers.
 

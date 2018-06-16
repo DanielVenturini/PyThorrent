@@ -36,12 +36,18 @@ class Decode:
             raise FileNotFoundError
 
         #self.keys()
+        self.getRawInfo = False
+        self.rawinfo = b''
         self.dic = self.getMainDictionarie()
 
     # read one byte and decode to string
     def read(self):
+        ret = self.file.read(1)
+        if(self.getRawInfo):
+            self.rawinfo += ret
+
         # some torrent has coding 'no-utf8'
-        return self.file.read(1).decode('ISO8859-1')
+        return ret.decode('ISO8859-1')
 
 
     # since everything is inside a dictionary
@@ -129,10 +135,19 @@ class Decode:
 
             # Note that the keys must be bencoded strings
             key = self.getNextDecode(data)
+
+            # get the mapped info in raw bytes
+            if(key.__eq__('info')):
+                self.getRawInfo = True
+
             if(key.__eq__('pieces')):
                 value = self.getSHA1ToPieces()
             else:
                 value = self.getNextDecode(self.read())
+
+            # if is get raw bytes, stop the get raw bytes
+            if (key.__eq__('info')):
+                self.getRawInfo = False
 
             dic[key] = value
             data = self.read()
@@ -150,7 +165,10 @@ class Decode:
 
         # read all sequence of SHA
         for byte in range(0, size):
-            seqSHA += self.file.read(1).hex()
+            raw = self.file.read(1)
+
+            self.rawinfo += raw
+            seqSHA += raw.hex()
 
             # if the length of sequence is 20,
             # is the end of this sequence
@@ -160,8 +178,9 @@ class Decode:
 
         return listSHA
 
+
+#-------------------------------below are the defs to encode one object-------------------------------
 class Bencode:
-#-------------------------------below are the defs to encode one string-------------------------------
 
     # this def returns the first object encoded
     def encode(self, object):

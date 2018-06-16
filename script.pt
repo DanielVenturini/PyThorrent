@@ -1,5 +1,5 @@
 #----------decodifica o arquivo--------------------------------------------
-from Decode import Decode
+from BencodeDecode import (Decode, Bencode)
 #dec = Decode('torrentsproibidos/velozes.torrent')
 dec = Decode('example.torrent/ubuntu-18.04-desktop-amd64.iso.torrent')
 dec.decodeFullFile()
@@ -7,24 +7,21 @@ dec.decodeFullFile()
 dic = dec.dic
 #--------calcula o sha1-----------------------------------------------------
 import hashlib
-import pickle
-def getSHA1(dict):
+def getSHA1(rawinfo):
         sha = hashlib.sha1()
-        sha.update(pickle.dumps(dict['info']))
+        sha.update(rawinfo)
         return sha.hexdigest()
 
 #---------recupera as informacoes--------------------------------------------
 from THP_PWP import CommonDef
-announce = dict['announce']
-torrentName = dict['info']['name']
-lenTorrent = CommonDef.getFullLefFile(dict)
-#info_hash = getSHA1(dict)
+announce = dic['announce']
+torrentName = dic['info']['name']
+lenTorrent = CommonDef.getFullLefFile(dic)
+info_hash = getSHA1(dic['info'])
 peer_id = CommonDef.getPeerId()
 port = CommonDef.getPort()
 uploaded, downloaded, left = CommonDef.getProperties(torrentName, lenTorrent)
 
-
-info_hash = 'd665acce64e708bcf497082f1ac61a69a9c0f5e5'
 #---------cria mensagem------------------------------------------------------
 mensagem = 'GET ' + announce +'?' +\
             'info_hash=' + str(info_hash) + '&' +\
@@ -51,10 +48,6 @@ s.sendto(mensagem.encode(), ('87.233.192.220', 6969))
 s.recvfrom(1024)
 s.close()
 ------------------------------------------------------------------------------
-http://tracker.documentfoundation.org:6969/announce
-announce = '/announce'
-info_hash = 'e4be9e4db876e3e3179778b03e906297be5c8dbe'
-
 import socket
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 #s.bind(('192.168.0.105', 6969))
@@ -64,34 +57,3 @@ s.connect(('tracker.documentfoundation.org', 6969))
 s.send(mensagem.encode())
 s.recv(100)
 s.close()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import hashlib
-
-# BUF_SIZE is totally arbitrary, change for your app!
-BUF_SIZE = 65536  # lets read stuff in 64kb chunks!
-
-sha1 = hashlib.sha1()
-
-with open('example.torrent/ubuntu-18.04-desktop-amd64.iso.torrent', 'rb') as f:
-    while True:
-        data = f.read(BUF_SIZE)
-        if not data:
-            break
-        sha1.update(data)
-
-sha1.hexdigest()

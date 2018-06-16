@@ -1,7 +1,7 @@
 # -*- conding:ISO-8859-1 -*-
 
 from random import randint
-import socket
+import hashlib
 import os
 
 def createPeerId():
@@ -117,5 +117,7 @@ def getFullLefFile(dict):
 
         return fullSize
 
-def sendPackage(socket, ip, porta):
-    socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def getSHA1(toSha1):
+    sha = hashlib.sha1()
+    sha.update(toSha1)
+    return sha.hexdigest()

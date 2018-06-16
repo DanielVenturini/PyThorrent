@@ -26,7 +26,7 @@ class openFile:
         Gtk.main()
 
     def download(self, Widget):
-        THP(self.dict).start()
+        THP(self.dict, self.decode.rawinfo).start()
         self.window.windowOpenFile.close()
 
     # when click the button to ok read file

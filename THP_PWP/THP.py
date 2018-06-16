@@ -7,10 +7,11 @@ import socket
 
 class THP(Thread):
 
-    def __init__(self, dict):
+    def __init__(self, dict, rawinfo):
         super(THP, self).__init__()
 
         self.dict = dict
+        self.rawinfo = rawinfo
         self.announce = self.dict['announce']
         self.torrentName = self.dict['info']['name']
         self.lenTorrent = CommonDef.getFullLefFile(self.dict)
@@ -54,7 +55,7 @@ class THP(Thread):
         return ip, int(port)
 
     def run(self):
-        self.info_hash = self.getSHA1()
+        self.info_hash = CommonDef.getSHA1(self.rawinfo)
         self.peer_id = CommonDef.getPeerId()
         self.port = CommonDef.getPort()
 
@@ -64,11 +65,6 @@ class THP(Thread):
         print("port: " + str(self.port))
         self.connectAndGetPeerList()
 
-    def getSHA1(self):
-        sha = hashlib.sha1()
-        sha.update(self.dict['info'].__str__().encode())
-        return sha.hexdigest()
-
     # which event send to server, if none, ''
     def getMessage(self, event=''):
         # ever when get the messagem, get this properties
@@ -77,7 +73,7 @@ class THP(Thread):
         # GET /announce?key=value&key=value ... HTTP/1.1 \r\n\r\n
         return ('GET /announce?' +
                 #'info_hash=' + str(self.info_hash) + '&' +
-                'info_hash=c68577760d821c9b3101fb113207307042adac6f&' +
+                'info_hash=' + self.info_hash + '&' +
                 'peer_id=' + self.peer_id + '&' +
                 'port' + self.port + '&' +
                 'uploaded=' + str(uploaded) + '&' +

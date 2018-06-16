@@ -41,8 +41,13 @@ class THP(Thread):
             # then separe in the '/'
             indexSepare = announce.rindex('/')
         else:
+            if(announce.find('/', start) == -1):
+                ultimoIndex = announce.__len__()
+            else:
+                ultimoIndex = announce.rindex('/')
+
             indexSepare = announce.rindex(':')
-            port = announce[indexSepare+1:announce.rindex('/')]
+            port = announce[indexSepare+1:ultimoIndex]
 
         ip = announce[start:indexSepare]
 
@@ -72,7 +77,7 @@ class THP(Thread):
         # GET /announce?key=value&key=value ... HTTP/1.1 \r\n\r\n
         return ('GET /announce?' +
                 #'info_hash=' + str(self.info_hash) + '&' +
-                'info_hash=38c0ca5d45932d131ab19ced0d3391439ae9a51e&' +
+                'info_hash=c68577760d821c9b3101fb113207307042adac6f&' +
                 'peer_id=' + self.peer_id + '&' +
                 'port' + self.port + '&' +
                 'uploaded=' + str(uploaded) + '&' +
@@ -83,36 +88,54 @@ class THP(Thread):
 
     def connectAndGetPeerList(self):
         # connect with udp socket
+        tryList = False
+        message = self.getMessage(event='&event=started')
         if(self.announce.startswith('udp://')):
-            self.connectUDP()
+            tryList = self.connectUDP(self.addressTracker, self.portTracker, message)
         else:
-            self.connectTCP()
+            tryList = self.connectTCP(self.addressTracker, self.portTracker, message)
 
-    def connectUDP(self):
-        s = self.createSocketUDP()
-        s.sendto(self.getMessage(event='&event=started'), (self.addressTracker, self.portTracker))
-        print("Jah enviou")
-        s.settimeout(1)
+        if(tryList != False):
+            return
 
+        print("Agora para a lista: ", self.dict['announce-list'])
+        # try announces backup
+        for announce in self.dict['announce-list']:
+            announce = announce[0]
+            address, port = self.getAddressTracker(announce)
+
+            if (announce.startswith('udp://')):
+                tryList = self.connectUDP(address, port, message)
+            else:
+                tryList = self.connectTCP(address, port, message)
+
+    def connectUDP(self, addressTracker, portTracker, message):
         try:
-            print("Vai comecar a receber")
+            print("Conectando TCP:" + addressTracker + ":" + str(portTracker))
+            s = self.createSocketUDP()
+            s.sendto(message, (addressTracker, portTracker))
+            s.settimeout(0.5)
+
             response = s.recvfrom(1024)
-            print("Recebeu")
             print(response.decode())
         except Exception as error:
             print("Erro ao receber lista do tracker em UDP: " + str(error))
+            return False
 
-    def connectTCP(self):
+    def connectTCP(self, addressTracker, portTracker, message):
         try:
+            print("Conectando TCP:" + addressTracker +":" + str(portTracker))
             s = self.createSocketTCP()
-            s.connect((self.addressTracker, self.portTracker))
-            s.settimeout(1)
-
-            s.send(self.getMessage(event='&event=started'))
+            s.settimeout(0.5)
+            s.connect((addressTracker, portTracker))
+            s.send(message)
             response = s.recv(1024)
             print(response.decode())
+            return response
+
         except Exception as error:
             print("Erro ao receber lista do tracker em TCP: " + str(error))
+            return False
 
     def createSocketUDP(self):
         return socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

@@ -14,7 +14,8 @@ def createPeerId():
 
 def getPeerId():
     try:
-        peerId = openAndRead('../configures/configure.pt', 0, 20)
+        peerId = openAndRead('configures/configure.pt', 0, 20)
+
         if(peerId.startswith('-PT')):
             return peerId
         else:
@@ -53,10 +54,10 @@ def openAndRead(fileName='', line=0, at=0):
 # if the file configures/'fileName' not exists
 # create it and insert all lines
 def createAndInsertLines(fileName, lines):
-    if not os.path.exists('../configures/'):
-        os.makedirs('../configures/')
+    if not os.path.exists('configures/'):
+        os.makedirs('.configures/')
 
-    file = open('../configures/'+fileName, 'w+')
+    file = open('configures/'+fileName, 'w+')
     for line in lines:
         file.write(line + '\n')
 
@@ -67,7 +68,7 @@ def getPort():
     try:
         # read the firsts 4 bytes from second line
         # because the first line is the peer id
-        port = openAndRead('../configures/configure.pt', line=1, at=5)
+        port = openAndRead(fileName='configures/configure.pt', line=1, at=5)
         if(port.__eq__('')):
             raise FileNotFoundError
         else:
@@ -89,10 +90,11 @@ def getPort():
 def getProperties(torrentName, totalBytes):
     torrentName += '.pt'
 
+    print("Tentando ler do arquivo: " + torrentName)
     try:
-        uploaded = openAndRead('../configures/' + torrentName, line=0, at=-1)
-        downloaded = openAndRead('../configures/' + torrentName, line=1, at=-1)
-        left = openAndRead('../configures/' + torrentName, line=2, at=-1)
+        uploaded = openAndRead(fileName='configures/' + torrentName, line=0, at=-1)
+        downloaded = openAndRead(fileName='configures/' + torrentName, line=1, at=-1)
+        left = openAndRead(fileName='configures/' + torrentName, line=2, at=-1)
 
         return uploaded, downloaded, left
     except FileNotFoundError:
@@ -117,7 +119,11 @@ def getFullLefFile(dict):
 
         return fullSize
 
-def getSHA1(toSha1):
+def getSHA1(toSha1, hex=True):
     sha = hashlib.sha1()
     sha.update(toSha1)
-    return sha.hexdigest()
+
+    if(hex):
+        return sha.hexdigest()
+    else:
+        return sha.digest()

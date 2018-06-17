@@ -152,7 +152,6 @@ class Decode:
             dic[key] = value
             data = self.read()
 
-        #print("Dictonarie-> ", dic)
         return dic
 
 

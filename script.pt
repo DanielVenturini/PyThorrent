@@ -1,29 +1,32 @@
 #----------decodifica o arquivo--------------------------------------------
 from BencodeDecode import (Decode, Bencode)
-#dec = Decode('torrentsproibidos/velozes.torrent')
-dec = Decode('example.torrent/ubuntu-18.04-desktop-amd64.iso.torrent')
+dec = Decode('torrentsproibidos/[limetorrents.cc]Lost.In.London..2017..[WEBRip].[720p].[YTS.AM].torrent')
+#dec = Decode('example.torrent/linux-lite-3.8-32bit.iso.torrent')
 dec.decodeFullFile()
 
 dic = dec.dic
 #--------calcula o sha1-----------------------------------------------------
 import hashlib
-def getSHA1(rawinfo):
-        sha = hashlib.sha1()
-        sha.update(rawinfo)
+def getSHA1(toSha1, hex=True):
+    sha = hashlib.sha1()
+    sha.update(toSha1)
+    if(hex):
         return sha.hexdigest()
+    else:
+        return sha.digest()
 
 #---------recupera as informacoes--------------------------------------------
 from THP_PWP import CommonDef
 announce = dic['announce']
 torrentName = dic['info']['name']
 lenTorrent = CommonDef.getFullLefFile(dic)
-info_hash = getSHA1(dic['info'])
+info_hash = getSHA1(dec.rawinfo)
 peer_id = CommonDef.getPeerId()
 port = CommonDef.getPort()
 uploaded, downloaded, left = CommonDef.getProperties(torrentName, lenTorrent)
 
 #---------cria mensagem------------------------------------------------------
-mensagem = 'GET ' + announce +'?' +\
+mensagem = 'GET /announce?' +\
             'info_hash=' + str(info_hash) + '&' +\
             'peer_id=' + peer_id + '&' +\
             'port=' + str(port) + '&' +\
@@ -57,3 +60,12 @@ s.connect(('tracker.documentfoundation.org', 6969))
 s.send(mensagem.encode())
 s.recv(100)
 s.close()
+
+
+
+
+
+binascii.unhexlify(info_hash)
+
+from requests.utils import quote
+quote(str)

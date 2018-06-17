@@ -1,8 +1,8 @@
 # -*- coding:ISO-8859-1 -*-
 
+from requests.utils import quote
 from THP_PWP import CommonDef
 from threading import Thread
-import hashlib
 import socket
 
 class THP(Thread):
@@ -55,7 +55,7 @@ class THP(Thread):
         return ip, int(port)
 
     def run(self):
-        self.info_hash = CommonDef.getSHA1(self.rawinfo)
+        self.info_hash = self.convertSHA1ToURI()
         self.peer_id = CommonDef.getPeerId()
         self.port = CommonDef.getPort()
 
@@ -65,6 +65,9 @@ class THP(Thread):
         print("port: " + str(self.port))
         self.connectAndGetPeerList()
 
+    def convertSHA1ToURI(self):
+        return quote(CommonDef.getSHA1(self.rawinfo, hex=False))
+
     # which event send to server, if none, ''
     def getMessage(self, event=''):
         # ever when get the messagem, get this properties
@@ -73,19 +76,20 @@ class THP(Thread):
         # GET /announce?key=value&key=value ... HTTP/1.1 \r\n\r\n
         return ('GET /announce?' +
                 #'info_hash=' + str(self.info_hash) + '&' +
-                'info_hash=' + self.info_hash + '&' +
+                'info_hash=' + self.convertSHA1ToURI() + '&' +
                 'peer_id=' + self.peer_id + '&' +
                 'port' + self.port + '&' +
                 'uploaded=' + str(uploaded) + '&' +
                 'downloaded=' + str(downloaded) + '&' +
                 'left=' + str(left) +
                 event +
-                ' HTTP/1.1\n\r\n\r\n').encode()
+                ' HTTP/1.1\r\n\r\n').encode()
 
     def connectAndGetPeerList(self):
         # connect with udp socket
         tryList = False
         message = self.getMessage(event='&event=started')
+        print(message)
         if(self.announce.startswith('udp://')):
             tryList = self.connectUDP(self.addressTracker, self.portTracker, message)
         else:
@@ -94,7 +98,6 @@ class THP(Thread):
         if(tryList != False):
             return
 
-        print("Agora para a lista: ", self.dict['announce-list'])
         # try announces backup
         for announce in self.dict['announce-list']:
             announce = announce[0]
@@ -107,7 +110,7 @@ class THP(Thread):
 
     def connectUDP(self, addressTracker, portTracker, message):
         try:
-            print("Conectando TCP:" + addressTracker + ":" + str(portTracker))
+            print("Conectando UDP:" + addressTracker + ":" + str(portTracker))
             s = self.createSocketUDP()
             s.sendto(message, (addressTracker, portTracker))
             s.settimeout(0.5)
@@ -115,7 +118,7 @@ class THP(Thread):
             response = s.recvfrom(1024)
             print(response.decode())
         except Exception as error:
-            print("Erro ao receber lista do tracker em UDP: " + str(error))
+            print("Erro ao receber em UDP: " + str(error))
             return False
 
     def connectTCP(self, addressTracker, portTracker, message):

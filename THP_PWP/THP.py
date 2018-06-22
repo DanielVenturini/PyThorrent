@@ -3,6 +3,8 @@
 from requests.utils import quote
 from THP_PWP import CommonDef
 from threading import Thread
+from random import randint
+import struct
 import socket
 
 class THP(Thread):
@@ -75,13 +77,13 @@ class THP(Thread):
 
         # GET /announce?key=value&key=value ... HTTP/1.1 \r\n\r\n
         return ('GET /announce?' +
-                #'info_hash=' + str(self.info_hash) + '&' +
                 'info_hash=' + self.convertSHA1ToURI() + '&' +
                 'peer_id=' + self.peer_id + '&' +
-                'port' + self.port + '&' +
+                'port=' + self.port + '&' +
                 'uploaded=' + str(uploaded) + '&' +
                 'downloaded=' + str(downloaded) + '&' +
-                'left=' + str(left) +
+                'left=' + str(left) + '&' +
+                'compact=1' +
                 event +
                 ' HTTP/1.1\r\n\r\n').encode()
 
@@ -91,7 +93,7 @@ class THP(Thread):
         message = self.getMessage(event='&event=started')
         print(message)
         if(self.announce.startswith('udp://')):
-            tryList = self.connectUDP(self.addressTracker, self.portTracker, message)
+            tryList = self.connectUDP(self.addressTracker, self.portTracker)
         else:
             tryList = self.connectTCP(self.addressTracker, self.portTracker, message)
 
@@ -104,19 +106,34 @@ class THP(Thread):
             address, port = self.getAddressTracker(announce)
 
             if (announce.startswith('udp://')):
-                tryList = self.connectUDP(address, port, message)
+                tryList = self.connectUDP(address, port)
             else:
                 tryList = self.connectTCP(address, port, message)
 
-    def connectUDP(self, addressTracker, portTracker, message):
+    def connectUDP(self, addressTracker, portTracker):
         try:
             print("Conectando UDP:" + addressTracker + ":" + str(portTracker))
             s = self.createSocketUDP()
-            s.sendto(message, (addressTracker, portTracker))
-            s.settimeout(0.5)
 
-            response = s.recvfrom(1024)
-            print(response.decode())
+            # get the first message, the message to connect
+            transaction_id, message = self.getPacket0UDP()
+            s.sendto(message, (addressTracker, portTracker))
+
+            # check the response
+            sucess, connection_id = self.checkResponse0UDP(s, transaction_id)
+            if(not sucess):
+                raise Exception
+
+            s = self.createSocketUDP()
+            message = self.getPacket1UDP(connection_id, transaction_id, 1)
+            s.sendto(message, (addressTracker, portTracker))
+
+            sucess, data = self.checkResponse1UDP(s, transaction_id)
+            if(not sucess):
+                raise Exception
+
+            print("Dados recebidos com sucesso")
+
         except Exception as error:
             print("Erro ao receber em UDP: " + str(error))
             return False
@@ -129,7 +146,7 @@ class THP(Thread):
             s.connect((addressTracker, portTracker))
             s.send(message)
             response = s.recv(1024)
-            print(response.decode())
+            print(response)
             return response
 
         except Exception as error:
@@ -137,7 +154,52 @@ class THP(Thread):
             return False
 
     def createSocketUDP(self):
-        return socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0.5)
+
+        return s
 
     def createSocketTCP(self):
         return socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # int64_t, int32_t, int32_t
+    def getPacket0UDP(self):
+        # ! -> network(bigend) q -> long integer 64 l -> integer 32
+        # first must be 0x41727101980
+        # 0 is the action to connect
+        # transaction_id is less than 2147483647
+        transaction_id = randint(0, 2147483647)
+        return transaction_id, struct.pack('!qll', 0x41727101980, 0, transaction_id)
+
+    def checkResponse0UDP(self, s, transaction_id):
+        resp = s.recvfrom(16)[0]
+        print("PRimeira resposta: ", resp)
+        # the len must be 16
+        if(len(resp) != 16):
+            return False, None
+
+        action, new_transaction_id, connection_id = struct.unpack('!llq', resp)
+        if(action != 0 or new_transaction_id != transaction_id):
+            return False, None
+
+        print("Tudo certo com transaction id e action")
+        return True, connection_id
+
+    def checkResponse1UDP(self, s, transaction_id):
+        resp = s.recvfrom(20)[0]
+        print("Segunda resposta: ", resp)
+
+        if(len(resp) != 20):
+            return False, None
+
+        action, new_transaction_id, interval, ieechers, seeders = struct.unpack('!lllll', resp)
+        if(action != 1 or new_transaction_id != transaction_id):
+            return False, None
+
+        print("Tudo certo com transaction id e action")
+        print("Recebido: ", action, " ", interval, " ", ieechers, " ", seeders)
+        return True, resp
+
+    def getPacket1UDP(self, connection_id, transaction_id, event):
+        uploaded, downloaded, left = CommonDef.getProperties(self.torrentName, self.lenTorrent)
+        return struct.pack('!qll20s20sqqql', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event)

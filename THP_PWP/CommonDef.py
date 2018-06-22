@@ -96,7 +96,7 @@ def getProperties(torrentName, totalBytes):
         downloaded = openAndRead(fileName='configures/' + torrentName, line=1, at=-1)
         left = openAndRead(fileName='configures/' + torrentName, line=2, at=-1)
 
-        return uploaded, downloaded, left
+        return int(uploaded), int(downloaded), int(left)
     except FileNotFoundError:
         # if file not exists, create one file with:
         # first line is total uploaded

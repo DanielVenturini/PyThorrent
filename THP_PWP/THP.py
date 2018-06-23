@@ -59,12 +59,13 @@ class THP(Thread):
     def run(self):
         self.info_hash = self.convertSHA1ToURI()
         self.peer_id = CommonDef.getPeerId()
-        self.port = CommonDef.getPort()
+        self.portTCP = CommonDef.getPort()
+        self.portUDP = 0
 
         print("Valores dinamicos: ")
         print("info_hash: " + self.info_hash)
         print("peer_id: " + self.peer_id)
-        print("port: " + str(self.port))
+        print("port: " + str(self.portTCP))
         self.connectAndGetPeerList()
 
     def convertSHA1ToURI(self):
@@ -79,7 +80,7 @@ class THP(Thread):
         return ('GET /announce?' +
                 'info_hash=' + self.convertSHA1ToURI() + '&' +
                 'peer_id=' + self.peer_id + '&' +
-                'port=' + self.port + '&' +
+                'port=' + self.portTCP + '&' +
                 'uploaded=' + str(uploaded) + '&' +
                 'downloaded=' + str(downloaded) + '&' +
                 'left=' + str(left) + '&' +
@@ -124,8 +125,8 @@ class THP(Thread):
             if(not sucess):
                 raise Exception
 
-            s = self.createSocketUDP()
-            message = self.getPacket1UDP(connection_id, transaction_id, 1)
+            #s = self.createSocketUDP()
+            message = self.getPacket1UDP(connection_id, transaction_id, 2)
             s.sendto(message, (addressTracker, portTracker))
 
             sucess, data = self.checkResponse1UDP(s, transaction_id)
@@ -134,6 +135,7 @@ class THP(Thread):
 
             print("Dados recebidos com sucesso")
 
+            self.recList(s)
         except Exception as error:
             print("Erro ao receber em UDP: " + str(error))
             return False
@@ -155,6 +157,8 @@ class THP(Thread):
 
     def createSocketUDP(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.bind(('192.168.0.29', randint(10000, 32767)))
+        self.portUDP = int(s.getsockname()[1])
         s.settimeout(0.5)
 
         return s
@@ -202,4 +206,19 @@ class THP(Thread):
 
     def getPacket1UDP(self, connection_id, transaction_id, event):
         uploaded, downloaded, left = CommonDef.getProperties(self.torrentName, self.lenTorrent)
-        return struct.pack('!qll20s20sqqql', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event)
+        #return struct.pack('!qll20s20sqqql', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event)
+        print("Minha porta enviada ao servidor: ", self.portUDP)
+        return struct.pack('!qll20s20sqqqllllh', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event, 0, randint(0, 21474836), 10, int(self.portUDP))
+
+    def recList(self, s):
+        # when tracker dont send more packet,
+        # will raise a except and break a while
+        print("MInha porta agora: ", s.getsockname())
+        while True:
+            # 32 + 16
+            s.settimeout(1)
+            print("Vai receber a lista")
+            data = s.recvfrom(48)
+            print("Recebeu: ", data)
+            data = struct.unpack('!lh', data[0])
+            print("Lista recebida: ", data)

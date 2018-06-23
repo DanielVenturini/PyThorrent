@@ -80,7 +80,7 @@ def getPort():
         # and second line the port
         port = list()
         port.append(createPeerId())
-        port.append(str(randint(10000, 65535)))
+        port.append(str(randint(10000, 32767)))
 
         createAndInsertLines('configure.pt', port)
         return getPort()
@@ -90,7 +90,6 @@ def getPort():
 def getProperties(torrentName, totalBytes):
     torrentName += '.pt'
 
-    print("Tentando ler do arquivo: " + torrentName)
     try:
         uploaded = openAndRead(fileName='configures/' + torrentName, line=0, at=-1)
         downloaded = openAndRead(fileName='configures/' + torrentName, line=1, at=-1)

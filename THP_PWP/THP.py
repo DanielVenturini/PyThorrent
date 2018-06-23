@@ -135,8 +135,6 @@ class THP(Thread):
                 raise Exception
 
             print("Dados recebidos com sucesso")
-
-            self.recList(s)
         except Exception as error:
             print("Erro ao receber em UDP: " + str(error))
             return False
@@ -194,22 +192,34 @@ class THP(Thread):
         resp = s.recvfrom(20+((20+6*self.num_want) + (24+6*self.num_want)))[0]
         print("Segunda resposta: ", resp, " Tamanho da resposta: ", len(resp))
 
-        if(len(resp) != 20):
+        if(len(resp) < 20):
             return False, None
 
-        action, new_transaction_id, interval, ieechers, seeders = struct.unpack('!lllll', resp)
+        action, new_transaction_id, interval, ieechers, seeders = struct.unpack('!lllll', resp[:20])
         if(action != 1 or new_transaction_id != transaction_id):
             return False, None
 
         print("Tudo certo com transaction id e action")
         print("Recebido: ", action, " ", interval, " ", ieechers, " ", seeders)
+        self.recList(resp[20:], seeders)
+
         return True, resp
 
     def getPacket1UDP(self, connection_id, transaction_id, event):
         uploaded, downloaded, left = CommonDef.getProperties(self.torrentName, self.lenTorrent)
-        #return struct.pack('!qll20s20sqqql', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event)
-        print("Minha porta enviada ao servidor: ", self.portUDP)
+        print("Porta enviada para o servidor: ", self.portUDP)
         return struct.pack('!qll20s20sQQQIIIiH', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event, 0, 0, self.num_want, int(self.portUDP))
 
-    def recList(self, s):
-        pass
+    def recList(self, data, seeders):
+        print("Vai printar os peers")
+        try:
+
+            for i in range(0, seeders):
+                ip = struct.unpack('BBBB', data[i*6:((i*6)+4)])
+                port = struct.unpack('!h', data[((i*6)+4):((i*6)+4)+2])
+                print(ip, ":", port[0])
+
+        except Exception as ex:
+            print("Error em printar a lista: " + str(ex))
+
+        print("Jah printou")

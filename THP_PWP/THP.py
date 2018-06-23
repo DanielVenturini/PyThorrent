@@ -61,6 +61,7 @@ class THP(Thread):
         self.peer_id = CommonDef.getPeerId()
         self.portTCP = CommonDef.getPort()
         self.portUDP = 0
+        self.num_want = 10
 
         print("Valores dinamicos: ")
         print("info_hash: " + self.info_hash)
@@ -190,8 +191,8 @@ class THP(Thread):
         return True, connection_id
 
     def checkResponse1UDP(self, s, transaction_id):
-        resp = s.recvfrom(20)[0]
-        print("Segunda resposta: ", resp)
+        resp = s.recvfrom(20+((20+6*self.num_want) + (24+6*self.num_want)))[0]
+        print("Segunda resposta: ", resp, " Tamanho da resposta: ", len(resp))
 
         if(len(resp) != 20):
             return False, None
@@ -208,17 +209,7 @@ class THP(Thread):
         uploaded, downloaded, left = CommonDef.getProperties(self.torrentName, self.lenTorrent)
         #return struct.pack('!qll20s20sqqql', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event)
         print("Minha porta enviada ao servidor: ", self.portUDP)
-        return struct.pack('!qll20s20sqqqllllh', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event, 0, randint(0, 21474836), 10, int(self.portUDP))
+        return struct.pack('!qll20s20sQQQIIIiH', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event, 0, 0, self.num_want, int(self.portUDP))
 
     def recList(self, s):
-        # when tracker dont send more packet,
-        # will raise a except and break a while
-        print("MInha porta agora: ", s.getsockname())
-        while True:
-            # 32 + 16
-            s.settimeout(1)
-            print("Vai receber a lista")
-            data = s.recvfrom(48)
-            print("Recebeu: ", data)
-            data = struct.unpack('!lh', data[0])
-            print("Lista recebida: ", data)
+        pass

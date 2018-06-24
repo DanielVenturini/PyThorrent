@@ -9,23 +9,27 @@ import socket
 
 class THP(Thread):
 
-    def __init__(self, dict, rawinfo):
+    def __init__(self, dict, rawinfo, torrentName=''):
         super(THP, self).__init__()
 
+        self.init(dict, rawinfo, torrentName)
+
+    def init(self, dict, rawinfo, torrentName):
+        # if the PyTorrent is on in half download
+        # then dict is None
+        if(not dict or not rawinfo):
+            self.torrentName = torrentName
+            return
+
+        self.peers = []
         self.dict = dict
         self.rawinfo = rawinfo
         self.announce = self.dict['announce']
+        self.info_hash = self.convertSHA1ToURI()
         self.torrentName = self.dict['info']['name']
         self.lenTorrent = CommonDef.getFullLefFile(self.dict)
 
         self.addressTracker, self.portTracker = self.getAddressTracker(self.announce)
-
-        print("Foi recuperado os seguintes valores:")
-        print("announce: " + self.announce)
-        print("torrent name: " + self.torrentName)
-        print("size of torrent: " + str(self.lenTorrent))
-        print("address: " + self.addressTracker)
-        print("port: " + str(self.portTracker))
 
     def getAddressTracker(self, announce):
         protocol = announce.startswith('udp://')
@@ -57,17 +61,11 @@ class THP(Thread):
         return ip, int(port)
 
     def run(self):
-        self.info_hash = self.convertSHA1ToURI()
         self.peer_id = CommonDef.getPeerId()
         self.portTCP = CommonDef.getPort('TCP')
         self.portUDP = CommonDef.getPort('UDP')
         self.num_want = 10
 
-        print("Valores dinamicos: ")
-        print("info_hash: " + self.info_hash)
-        print("peer_id: " + self.peer_id)
-        print("port TCP: " + str(self.portTCP))
-        print("port UDP: " + str(self.portUDP))
         self.connectAndGetPeerList()
 
     def convertSHA1ToURI(self):
@@ -127,7 +125,6 @@ class THP(Thread):
             if(not sucess):
                 raise Exception
 
-            #s = self.createSocketUDP()
             message = self.getPacket1UDP(connection_id, transaction_id, 2)
             s.sendto(message, (addressTracker, portTracker))
 
@@ -135,7 +132,6 @@ class THP(Thread):
             if(not sucess):
                 raise Exception
 
-            print("Dados recebidos com sucesso")
         except Exception as error:
             print("Erro ao receber em UDP: " + str(error))
             return False
@@ -148,7 +144,8 @@ class THP(Thread):
             s.connect((addressTracker, portTracker))
             s.send(message)
             response = s.recv(1024)
-            print(response)
+
+            self.verifyResponse(response)
             return response
 
         except Exception as error:
@@ -216,7 +213,7 @@ class THP(Thread):
         try:
 
             for i in range(0, seeders):
-                ip = struct.unpack('BBBB', data[i*6:((i*6)+4)])
+                ip = self.getFullIP(struct.unpack('BBBB', data[i*6:((i*6)+4)]))
                 port = struct.unpack('!h', data[((i*6)+4):((i*6)+4)+2])
                 print(ip, ":", port[0])
 
@@ -224,3 +221,10 @@ class THP(Thread):
             print("Error em printar a lista: " + str(ex))
 
         print("Jah printou")
+
+    def getFullIP(self, data):
+        return str(data[0])+'.'+str(data[1])+'.'+str(data[2])+'.'+str(data[3])
+
+    def verifyResponse(self, response):
+        method = response[:12]
+        print("Recebeu a seguinte resposta: ", method)

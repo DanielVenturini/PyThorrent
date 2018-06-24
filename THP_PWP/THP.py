@@ -59,14 +59,15 @@ class THP(Thread):
     def run(self):
         self.info_hash = self.convertSHA1ToURI()
         self.peer_id = CommonDef.getPeerId()
-        self.portTCP = CommonDef.getPort()
-        self.portUDP = 0
+        self.portTCP = CommonDef.getPort('TCP')
+        self.portUDP = CommonDef.getPort('UDP')
         self.num_want = 10
 
         print("Valores dinamicos: ")
         print("info_hash: " + self.info_hash)
         print("peer_id: " + self.peer_id)
-        print("port: " + str(self.portTCP))
+        print("port TCP: " + str(self.portTCP))
+        print("port UDP: " + str(self.portUDP))
         self.connectAndGetPeerList()
 
     def convertSHA1ToURI(self):
@@ -81,7 +82,7 @@ class THP(Thread):
         return ('GET /announce?' +
                 'info_hash=' + self.convertSHA1ToURI() + '&' +
                 'peer_id=' + self.peer_id + '&' +
-                'port=' + self.portTCP + '&' +
+                'port=' + str(self.portTCP) + '&' +
                 'uploaded=' + str(uploaded) + '&' +
                 'downloaded=' + str(downloaded) + '&' +
                 'left=' + str(left) + '&' +
@@ -141,7 +142,7 @@ class THP(Thread):
 
     def connectTCP(self, addressTracker, portTracker, message):
         try:
-            print("Conectando TCP:" + addressTracker +":" + str(portTracker))
+            print("Conectando TCP: " + addressTracker +":" + str(portTracker))
             s = self.createSocketTCP()
             s.settimeout(0.5)
             s.connect((addressTracker, portTracker))
@@ -156,7 +157,7 @@ class THP(Thread):
 
     def createSocketUDP(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.bind(('192.168.0.29', randint(10000, 32767)))
+        s.bind(('192.168.0.29', self.portUDP))
         self.portUDP = int(s.getsockname()[1])
         s.settimeout(0.5)
 
@@ -192,7 +193,7 @@ class THP(Thread):
         resp = s.recvfrom(20+((20+6*self.num_want) + (24+6*self.num_want)))[0]
         print("Segunda resposta: ", resp, " Tamanho da resposta: ", len(resp))
 
-        if(len(resp) < 20):
+        if(len(resp) <= 20):
             return False, None
 
         action, new_transaction_id, interval, ieechers, seeders = struct.unpack('!lllll', resp[:20])

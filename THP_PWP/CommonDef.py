@@ -64,15 +64,23 @@ def createAndInsertLines(fileName, lines):
     file.close()
 
 # get the port which the client is hear for new connections
-def getPort():
+# the protocol refer to line in the configure.pt
+def getPort(protocol):
     try:
         # read the firsts 4 bytes from second line
         # because the first line is the peer id
-        port = openAndRead(fileName='configures/configure.pt', line=1, at=5)
+        if(protocol.__eq__('TCP')):
+            line = 2
+        elif(protocol.__eq__('UDP')):
+            line = 3
+        else:   #pwp
+            line = 4
+
+        port = openAndRead(fileName='configures/configure.pt', line=line, at=5)
         if(port.__eq__('')):
             raise FileNotFoundError
         else:
-            return port
+            return int(port)
 
     except FileNotFoundError:
         # create file 'configure.pt'
@@ -81,9 +89,11 @@ def getPort():
         port = list()
         port.append(createPeerId())
         port.append(str(randint(10000, 32767)))
+        port.append(str(randint(10000, 32767)))
+        port.append(str(randint(10000, 32767)))
 
         createAndInsertLines('configure.pt', port)
-        return getPort()
+        return getPort(protocol)
 
 
 # this def get the attr of bytes transfered

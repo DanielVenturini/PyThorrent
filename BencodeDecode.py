@@ -23,25 +23,37 @@ use:
 
 class Decode:
 
-    def __init__(self, nameFile):
-        try:
-            self.file = open(nameFile, 'rb')
-        except FileNotFoundError:
-            self.file = None
-            raise FileNotFoundError
+    def __init__(self, nameFile=''):
+        if(not nameFile.__eq__('')):
+            try:
+                self.file = open(nameFile, 'rb')
+            except FileNotFoundError:
+                self.file = None
+                raise FileNotFoundError
 
     def decodeFullFile(self):
         if(not self.file):
             print("File not found. Create a new instance of this class with the correct path")
             raise FileNotFoundError
 
-        #self.keys()
         self.getRawInfo = False
         self.rawinfo = b''
         self.dic = self.getMainDictionarie()
 
+    def decodeString(self, string):
+        self.file = None
+        self.string = string
+        self.pos = -1
+
+        return self.getMainDictionarie()
+
     # read one byte and decode to string
     def read(self):
+        # if not file, then is decoded one string
+        if(not self.file):
+            self.pos += 1
+            return self.string[self.pos]
+
         ret = self.file.read(1)
         if(self.getRawInfo):
             self.rawinfo += ret

@@ -64,7 +64,7 @@ class THP(Thread):
         self.peer_id = CommonDef.getPeerId()
         self.portTCP = CommonDef.getPort('TCP')
         self.portUDP = CommonDef.getPort('UDP')
-        self.num_want = 10
+        self.num_want = -1
 
         self.connectAndGetPeerList()
 
@@ -125,6 +125,7 @@ class THP(Thread):
             if(not sucess):
                 raise Exception
 
+            transaction_id = randint(0, 2147483647)     # new random transaction_id
             message = self.getPacket1UDP(connection_id, transaction_id, 2)
             s.sendto(message, (addressTracker, portTracker))
 
@@ -132,6 +133,8 @@ class THP(Thread):
             if(not sucess):
                 raise Exception
 
+            # if this tracker has responsed, save this
+            CommonDef.setTracker(self.torrentName, 'udp://'+addressTracker+':'+str(portTracker))
         except Exception as error:
             print("Erro ao receber em UDP: " + str(error))
             return False
@@ -145,7 +148,10 @@ class THP(Thread):
             s.send(message)
             response = s.recv(1024)
 
-            self.verifyResponse(response)
+            if(self.verifyResponse(response)):
+                # save the tracker
+                CommonDef.setTracker(self.torrentName, 'http://'+addressTracker+':'+str(portTracker))
+
             return response
 
         except Exception as error:
@@ -174,7 +180,6 @@ class THP(Thread):
 
     def checkResponse0UDP(self, s, transaction_id):
         resp = s.recvfrom(16)[0]
-        print("PRimeira resposta: ", resp)
         # the len must be 16
         if(len(resp) != 16):
             return False, None
@@ -183,48 +188,69 @@ class THP(Thread):
         if(action != 0 or new_transaction_id != transaction_id):
             return False, None
 
-        print("Tudo certo com transaction id e action")
         return True, connection_id
 
     def checkResponse1UDP(self, s, transaction_id):
-        resp = s.recvfrom(20+((20+6*self.num_want) + (24+6*self.num_want)))[0]
-        print("Segunda resposta: ", resp, " Tamanho da resposta: ", len(resp))
+        if(self.num_want == -1):
+            resp = s.recvfrom(2048)[0]
+        else:
+            resp = s.recvfrom(20+((20+6*self.num_want) + (24+6*self.num_want)))[0]
 
-        if(len(resp) <= 20):
+        print("Tamanho da resposta: ", len(resp))
+
+        if(len(resp) <= 26):
             return False, None
 
         action, new_transaction_id, interval, ieechers, seeders = struct.unpack('!lllll', resp[:20])
         if(action != 1 or new_transaction_id != transaction_id):
             return False, None
 
-        print("Tudo certo com transaction id e action")
         print("Recebido: ", action, " ", interval, " ", ieechers, " ", seeders)
-        self.recList(resp[20:], seeders)
+        #self.recList(resp[20:], seeders)
 
         return True, resp
 
     def getPacket1UDP(self, connection_id, transaction_id, event):
         uploaded, downloaded, left = CommonDef.getProperties(self.torrentName, self.lenTorrent)
-        print("Porta enviada para o servidor: ", self.portUDP)
-        return struct.pack('!qll20s20sQQQIIIiH', connection_id, 1, transaction_id, self.info_hash.encode(), self.peer_id.encode(), uploaded, downloaded, left, event, 0, 0, self.num_want, int(self.portUDP))
+        return struct.pack('!qll20s20sQQQIIIiH', connection_id, 1, transaction_id, CommonDef.getSHA1(self.rawinfo, hex=False), self.peer_id.encode(), uploaded, downloaded, left, event, 0, 0, self.num_want, int(self.portUDP))
 
     def recList(self, data, seeders):
         print("Vai printar os peers")
+
         try:
 
             for i in range(0, seeders):
                 ip = self.getFullIP(struct.unpack('BBBB', data[i*6:((i*6)+4)]))
-                port = struct.unpack('!h', data[((i*6)+4):((i*6)+4)+2])
-                print(ip, ":", port[0])
+                port = struct.unpack('!h', data[((i*6)+4):((i*6)+4)+2])[0]
+
+                if(port  < 0):
+                    port *= -1
+
+                print(ip, ":", port)
+                self.peers.append(ip+':'+str(port))
 
         except Exception as ex:
             print("Error em printar a lista: " + str(ex))
-
-        print("Jah printou")
 
     def getFullIP(self, data):
         return str(data[0])+'.'+str(data[1])+'.'+str(data[2])+'.'+str(data[3])
 
     def verifyResponse(self, response):
-        method = response[:12]
+        method = response[:12].decode()
         print("Recebeu a seguinte resposta: ", method)
+
+        if(method.__eq__('HTTP/1.1 200')):
+            print(response[12:])
+            return True
+        else:
+            return False
+
+    def getIpPeers(self, data):
+        for i in range(0, int(len(data)/6)):
+            ip = self.getFullIP(struct.unpack('BBBB', data[i * 6:((i * 6) + 4)]))
+            port = struct.unpack('!h', data[((i * 6) + 4):((i * 6) + 4) + 2])[0]
+
+            if (port < 0):
+                port *= -1
+
+            self.peers.append(ip + ':' + str(port))

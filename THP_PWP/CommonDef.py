@@ -55,7 +55,7 @@ def openAndRead(fileName='', line=0, at=0):
 # create it and insert all lines
 def createAndInsertLines(fileName, lines):
     if not os.path.exists('configures/'):
-        os.makedirs('.configures/')
+        os.makedirs('configures/')
 
     file = open('configures/'+fileName, 'w+')
     for line in lines:
@@ -136,3 +136,16 @@ def getSHA1(toSha1, hex=True):
         return sha.hexdigest()
     else:
         return sha.digest()
+
+def setTracker(fileName, address):
+    # is a file which has a list of tracker that response
+    fileName += '.tr'
+
+    try:
+        file = open('configures/'+fileName, 'a')
+        file.write(address + '\n')
+        file.close()
+    except FileNotFoundError:
+        lines = []
+        lines.append(address)
+        createAndInsertLines(fileName, lines)

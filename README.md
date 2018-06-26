@@ -8,6 +8,12 @@ O decode e o bencode do padrao BENCODE esta 100% funcionando. Para usar em qualq
 
 Adições dos recursos (mais antigos por ultimo):
 
+- Atualizando a interface grafica de acordo com o status do torrent
+
+- Impossibilitando que o mesmo torrent seja descarregado mais de uma vez
+
+- Funcoes de callback para atualizar a interface principal com as informacoes do torrent
+
 - Recebendo lista de Peers do Tracker via UDP.
 
 - Recebendo lista de Peers do Tracker via TCP.

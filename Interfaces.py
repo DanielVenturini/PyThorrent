@@ -4,6 +4,8 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
+from defs import defs
+
 OPEN_FILE = 'UI/OpenFile.ui'
 UI_FILE = 'UI/Basic_UI.ui'
 ABOUT = 'UI/About.ui'
@@ -90,12 +92,84 @@ class MainInterface:
         self.menuopen = self.builder.get_object('menuopen')
         self.menuquit = self.builder.get_object('menuquit')
 
+        # grid of files
+        self.gridFile = self.builder.get_object('gridFiles')
+        self.line = 2
+
         Gtk.main()
+
+    def addFile(self, torrentName):
+        # name torrent
+        labelName = Gtk.Label()
+        labelName.set_text(torrentName)
+
+        # percent downloaded
+        labelDownloaded = Gtk.Label()
+        labelDownloaded.set_text('0%')
+
+        # qtd peers
+        labelPeers = Gtk.Label()
+        labelPeers.set_text('--')
+
+        # qtd tracker
+        labelTracker = Gtk.Label()
+        labelTracker.set_text('--')
+
+        self.gridFile.attach(labelName, 0, self.line, 1, 1)
+        self.gridFile.attach(labelDownloaded, 1, self.line, 1, 1)
+        self.gridFile.attach(labelPeers, 2, self.line, 1, 1)
+        self.gridFile.attach(labelTracker, 3, self.line, 1, 1)
+        self.gridFile.show_all()
+
+        self.line += 1
+
+    def updatePercent(self, torrentName):
+        pass
+
+    def updateTracker(self, torrentName, trackers):
+        for line in range(2, self.line):
+            label = self.gridFile.get_child_at(0, line)
+
+            if(label.get_text().__eq__(torrentName)):
+                labelTracker = self.gridFile.get_child_at(3, line)
+                currentPeers = labelTracker.get_text()
+
+                if(currentPeers.__eq__('--')):
+                    currentPeers = '0'
+
+                qtdPeer = int(currentPeers) + trackers
+                labelTracker.set_text(str(qtdPeer))
+
+    def updatePeer(self, torrentName, peers):
+        for line in range(2, self.line):
+            label = self.gridFile.get_child_at(0, line)
+
+            if(label.get_text().__eq__(torrentName)):
+                labelPeer = self.gridFile.get_child_at(2, line)
+                currentPeers = labelPeer.get_text()
+
+                if(currentPeers.__eq__('--')):
+                    currentPeers = '0'
+
+                qtdPeer = int(currentPeers) + peers
+                labelPeer.set_text(str(qtdPeer))
+
+    def contains(self, torrentName):
+        # gridFile.get_child_at(colum, line)
+        for line in range(2, self.line):
+            label = self.gridFile.get_child_at(0, line)
+            if(label.get_text().__eq__(torrentName)):
+                return True
+
+        return False
+
+    def createDefsInterface(self):
+        return defs(self.addFile, self.updatePercent, self.updateTracker, self.updatePeer, self.contains)
 
     # menubar -> File -> open
     def openFile(self, widget):
         import openFile
-        openFile.openFile()
+        openFile.openFile(self.createDefsInterface())
 
     # menubar -> File -> quit
     def quit(self, widget):

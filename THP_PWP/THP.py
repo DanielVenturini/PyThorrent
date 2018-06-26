@@ -1,5 +1,7 @@
 # -*- coding:ISO-8859-1 -*-
 
+from THP_PWP.UDP import UDPConnection
+from THP_PWP.TCP import TCPConnection
 from requests.utils import quote
 from BencodeDecode import Decode
 from THP_PWP import CommonDef
@@ -10,12 +12,12 @@ import socket
 
 class THP(Thread):
 
-    def __init__(self, dict, rawinfo, torrentName=''):
-        super(THP, self).__init__()
+    def __init__(self, dict, rawinfo, defsInterface, torrentName=''):
+        Thread.__init__(self)
 
-        self.init(dict, rawinfo, torrentName)
+        self.init(dict, rawinfo, torrentName, defsInterface)
 
-    def init(self, dict, rawinfo, torrentName):
+    def init(self, dict, rawinfo, torrentName, defsInterface):
         # if the PyTorrent is on in half download
         # then dict is None
         if(not dict or not rawinfo):
@@ -25,6 +27,7 @@ class THP(Thread):
         self.peers = []
         self.dict = dict
         self.rawinfo = rawinfo
+        self.defsInterface = defsInterface
         self.announce = self.dict['announce']
         self.info_hash = self.convertSHA1ToURI()
         self.torrentName = self.dict['info']['name']
@@ -90,6 +93,11 @@ class THP(Thread):
                 ' HTTP/1.1\r\n\r\n').encode()
 
     def connectAndGetPeerList(self):
+        UDPConnection(self.torrentName, self.peer_id, self.portUDP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface).start()
+        TCPConnection(self.torrentName, self.peer_id, self.portTCP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface).start()
+
+    """
+    def connectAndGetPeerList(self):
         # connect with udp socket
         tryList = False
         message = self.getMessage(event='&event=started')
@@ -112,7 +120,7 @@ class THP(Thread):
                 #tryList = self.connectUDP(address, port)
             else:
                 tryList = self.connectTCP(address, port, message)
-
+    """
     def connectUDP(self, addressTracker, portTracker):
         try:
             print("Conectando UDP:" + addressTracker + ":" + str(portTracker))

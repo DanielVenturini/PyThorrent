@@ -10,7 +10,7 @@ from gi.repository import Gtk
 
 class openFile:
 
-    def __init__(self):
+    def __init__(self, defsInterface):
         self.window = openFileInterface()
 
         # add the event clicked to execute the def readFile
@@ -22,12 +22,20 @@ class openFile:
         # when click in download, the file must be validated
         self.validate = False
 
+        # callback to add file in main interface
+        self.defsInterface = defsInterface
+
         # start UI
         Gtk.main()
 
     def download(self, Widget):
-        THP(self.dict, self.decode.rawinfo).start()
         self.window.windowOpenFile.close()
+
+        if(self.defsInterface.contains(self.dict['info']['name'])):
+            return
+
+        self.defsInterface.addFile(self.dict['info']['name'])
+        THP(self.dict, self.decode.rawinfo, self.defsInterface).start()
 
     # when click the button to ok read file
     def readFile(self, widget):

@@ -1,6 +1,7 @@
 # -*- coding:ISO-8859-1 -*-
 
 from requests.utils import quote
+from BencodeDecode import Decode
 from THP_PWP import CommonDef
 from threading import Thread
 from random import randint
@@ -107,7 +108,8 @@ class THP(Thread):
             address, port = self.getAddressTracker(announce)
 
             if (announce.startswith('udp://')):
-                tryList = self.connectUDP(address, port)
+                continue
+                #tryList = self.connectUDP(address, port)
             else:
                 tryList = self.connectTCP(address, port, message)
 
@@ -206,7 +208,7 @@ class THP(Thread):
             return False, None
 
         print("Recebido: ", action, " ", interval, " ", ieechers, " ", seeders)
-        #self.recList(resp[20:], seeders)
+        self.recList(resp[20:], seeders)
 
         return True, resp
 
@@ -215,7 +217,7 @@ class THP(Thread):
         return struct.pack('!qll20s20sQQQIIIiH', connection_id, 1, transaction_id, CommonDef.getSHA1(self.rawinfo, hex=False), self.peer_id.encode(), uploaded, downloaded, left, event, 0, 0, self.num_want, int(self.portUDP))
 
     def recList(self, data, seeders):
-        print("Vai printar os peers")
+        print("Dado original: ", data)
 
         try:
 
@@ -237,11 +239,12 @@ class THP(Thread):
 
     def verifyResponse(self, response):
         method = response[:12].decode()
-        print("Recebeu a seguinte resposta: ", method)
+        #print("Recebeu a seguinte resposta: ", method)
 
         if(method.__eq__('HTTP/1.1 200')):
-            print(response[12:])
-            return True
+            #print(response[12:])
+            # to body
+            return self.getPeersTCP(response[response.index('\r\n\r\n'.encode())+4:])
         else:
             return False
 
@@ -254,3 +257,10 @@ class THP(Thread):
                 port *= -1
 
             self.peers.append(ip + ':' + str(port))
+
+    def getPeersTCP(self, data):
+        try:
+            dic = Decode().decodeBytes(data)
+            print(dic['peers'])
+        except Exception as ex:
+            print('Erro na hora de recuperar os peers em TCP: ' + str(ex))

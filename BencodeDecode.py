@@ -40,9 +40,12 @@ class Decode:
         self.rawinfo = b''
         self.dic = self.getMainDictionarie()
 
-    def decodeString(self, string):
+    def decodeBytes(self, byte):
+        print(byte)
         self.file = None
-        self.string = string
+        self.byte = byte
+        self.getRawInfo = False
+        self.rawinfo = b''
         self.pos = -1
 
         return self.getMainDictionarie()
@@ -52,7 +55,11 @@ class Decode:
         # if not file, then is decoded one string
         if(not self.file):
             self.pos += 1
-            return self.string[self.pos]
+            if(not self.getRawInfo):
+                print(self.byte[self.pos])
+                return self.byte[self.pos]
+            else:
+                return self.byte[self.pos].decode('ISO8859-1')
 
         ret = self.file.read(1)
         if(self.getRawInfo):
@@ -149,17 +156,19 @@ class Decode:
             key = self.getNextDecode(data)
 
             # get the mapped info in raw bytes
-            if(key.__eq__('info')):
+            if(key.__eq__('info') or key.__eq__('peers')):
                 self.getRawInfo = True
 
             if(key.__eq__('pieces')):
                 value = self.getSHA1ToPieces()
-            else:
+            elif(not key.__eq__('peers')):
                 value = self.getNextDecode(self.read())
 
             # if is get raw bytes, stop the get raw bytes
-            if (key.__eq__('info')):
+            if (key.__eq__('info') or key.__eq__('peers')):
                 self.getRawInfo = False
+                if(key.__eq__('peers')):
+                    value = self.rawinfo
 
             dic[key] = value
             data = self.read()

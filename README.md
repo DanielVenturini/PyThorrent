@@ -8,9 +8,9 @@ O decode e o bencode do padrao BENCODE esta 100% funcionando. Para usar em qualq
 
 Adições dos recursos (mais antigos por ultimo):
 
-- Se conectando ao Tracker via UDP.
+- Recebendo lista de Peers do Tracker via UDP.
 
-- Recebendo pacotes do Tracker via TCP.
+- Recebendo lista de Peers do Tracker via TCP.
 
 - Obtendo SHA1 da 'info'.
 

@@ -1,7 +1,7 @@
 #----------decodifica o arquivo--------------------------------------------
 from BencodeDecode import (Decode, Bencode)
 dec = Decode('torrentsproibidos/[limetorrents.cc]Lost.In.London..2017..[WEBRip].[720p].[YTS.AM].torrent')
-#dec = Decode('example.torrent/linux-lite-3.8-32bit.iso.torrent')
+dec = Decode('example.torrent/linux-lite-3.8-32bit.iso.torrent')
 dec.decodeFullFile()
 
 dic = dec.dic

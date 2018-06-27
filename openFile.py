@@ -102,12 +102,17 @@ class openFile:
         # this two keys SHOULD be in the dict
         # if has info, get this, but it's next to verify the keys
         try:
-            self.dict['announce']
             self.info = self.dict['info']
+            self.dict['announce-list'].append(self.dict['announce'])
             return True
         except (KeyError, TypeError):
-            print("Erro no mainKeys")
-            return False
+            try:
+                self.dict['annouce']
+            except KeyError:
+                print("Erro no mainKeys")
+                return False
+            else:
+                return True
 
 
     # verify the keys of info

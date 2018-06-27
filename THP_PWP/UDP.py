@@ -154,9 +154,16 @@ class UDPConnection(Thread):
     def recList(self, data, seeders):
         print("Dado original: ", data)
 
+        if(self.num_want == -1):
+            qtdPeers = seeders
+        elif(self.num_want > seeders):
+            qtdPeers = seeders
+        else:
+            qtdPeers = self.num_want
+
         try:
 
-            for i in range(0, seeders):
+            for i in range(0, qtdPeers):
                 ip = self.getFullIP(struct.unpack('BBBB', data[i*6:((i*6)+4)]))
                 port = struct.unpack('!h', data[((i*6)+4):((i*6)+4)+2])[0]
 

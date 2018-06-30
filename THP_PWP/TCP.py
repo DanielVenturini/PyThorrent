@@ -21,7 +21,7 @@ class TCPConnection(Thread):
         self.announceList = announceList
         self.defsInterface = defsInterface
 
-    def start(self):
+    def run(self):
         # try announces backup
         message = self.getMessage(event='&event=started')
         print(message)
@@ -29,40 +29,10 @@ class TCPConnection(Thread):
             announce = announce[0]
 
             if (announce.startswith('http://')):
-                address, port = self.getAddressTracker(announce)
+                address, port = CommonDef.getAddressTracker(announce)
                 tryList = self.connectTCP(address, port, message)
             else:
                 continue
-
-
-    def getAddressTracker(self, announce):
-        protocol = announce.startswith('udp://')
-        ip = ''
-        port = 80   # if announce dosn't port, the default are 80
-        start = 0   # pos to start address in the string announce
-
-        # is udp, then the address starst in the pos 6
-        if(protocol):
-            start = 6
-        else:
-            start = 7
-
-        # if dosnt have a ':', then default port is 80
-        if(announce.find(':', start) == -1):
-            # then separe in the '/'
-            indexSepare = announce.rindex('/')
-        else:
-            if(announce.find('/', start) == -1):
-                ultimoIndex = announce.__len__()
-            else:
-                ultimoIndex = announce.rindex('/')
-
-            indexSepare = announce.rindex(':')
-            port = announce[indexSepare+1:ultimoIndex]
-
-        ip = announce[start:indexSepare]
-
-        return ip, int(port)
 
 
     def convertSHA1ToURI(self):
@@ -73,7 +43,7 @@ class TCPConnection(Thread):
         method = response[:12].decode()
         #print("Recebeu a seguinte resposta: ", method)
 
-        if(method.__eq__('HTTP/1.1 200')):
+        if(method.__eq__('HTTP/1.0 200') or method.__eq__('HTTP/1.1 200') or method.__eq__('HTTP/2.0 200')):
             #print(response[12:])
             # to body
             return self.getPeersTCP(response[response.index('\r\n\r\n'.encode())+4:])
@@ -107,13 +77,13 @@ class TCPConnection(Thread):
             s.connect((addressTracker, portTracker))
             s.send(message)
             response = s.recv(1024)
+            print(response)
 
             if(self.verifyResponse(response)):
                 # save the tracker
                 CommonDef.setTracker(self.torrentName, 'http://'+addressTracker+':'+str(portTracker))
                 self.defsInterface.updateTracker(self.torrentName, 1)
-
-            return response
+                return response
 
         except Exception as error:
             print("Erro ao receber lista do tracker em TCP: " + str(error))
@@ -126,7 +96,9 @@ class TCPConnection(Thread):
 
     def getPeersTCP(self, data):
         try:
-            dic = Decode().decodeBytes(data)
+            print("Vai decodificar: ", data)
+            dic = Decode().decodeBytes(data.decode('ISO8859-1'), data)
+            print("Jah decodificou")
             print(dic['peers'])
         except Exception as ex:
             print('Erro na hora de recuperar os peers em TCP: ' + str(ex))

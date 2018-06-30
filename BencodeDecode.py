@@ -40,10 +40,11 @@ class Decode:
         self.rawinfo = b''
         self.dic = self.getMainDictionarie()
 
-    def decodeBytes(self, byte):
-        print(byte)
+    def decodeBytes(self,respDecoded, respBinary):
+        print(respBinary)
         self.file = None
-        self.byte = byte
+        self.respDecoded = respDecoded
+        self.respBinary = respBinary
         self.getRawInfo = False
         self.rawinfo = b''
         self.pos = -1
@@ -53,13 +54,14 @@ class Decode:
     # read one byte and decode to string
     def read(self):
         # if not file, then is decoded one string
-        if(not self.file):
-            self.pos += 1
-            if(not self.getRawInfo):
-                print(self.byte[self.pos])
-                return self.byte[self.pos]
-            else:
-                return self.byte[self.pos].decode('ISO8859-1')
+
+        try:
+            if(not self.file):
+                self.pos += 1
+                return self.respDecoded[self.pos]
+        # when in the final of the resp, return -1. The file read(1) from file also returns -1
+        except IndexError:
+            return -1
 
         ret = self.file.read(1)
         if(self.getRawInfo):
@@ -156,19 +158,26 @@ class Decode:
             key = self.getNextDecode(data)
 
             # get the mapped info in raw bytes
-            if(key.__eq__('info') or key.__eq__('peers')):
+            if(key.__eq__('info')):
                 self.getRawInfo = True
 
             if(key.__eq__('pieces')):
                 value = self.getSHA1ToPieces()
+
+            #elif(not key.__eq__('peers')):
+            #    value = self.getNextDecode(self.read())
+
             elif(not key.__eq__('peers')):
                 value = self.getNextDecode(self.read())
+            else:
+                fullSize = self.getFullInteger(self.read())
+                self.pos += 1
+                value = self.respBinary[self.pos:self.pos+fullSize]
+                self.pos += fullSize
 
             # if is get raw bytes, stop the get raw bytes
-            if (key.__eq__('info') or key.__eq__('peers')):
+            if (key.__eq__('info')):
                 self.getRawInfo = False
-                if(key.__eq__('peers')):
-                    value = self.rawinfo
 
             dic[key] = value
             data = self.read()

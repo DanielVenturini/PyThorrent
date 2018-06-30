@@ -149,3 +149,32 @@ def setTracker(fileName, address):
         lines = []
         lines.append(address)
         createAndInsertLines(fileName, lines)
+
+def getAddressTracker(announce):
+    protocol = announce.startswith('udp://')
+    ip = ''
+    port = 80   # if announce dosn't port, the default are 80
+    start = 0   # pos to start address in the string announce
+
+    # is udp, then the address starst in the pos 6
+    if(protocol):
+        start = 6
+    else:
+        start = 7
+
+    # if dosnt have a ':', then default port is 80
+    if(announce.find(':', start) == -1):
+        # then separe in the '/'
+        indexSepare = announce.rindex('/')
+    else:
+        if(announce.find('/', start) == -1):
+            ultimoIndex = announce.__len__()
+        else:
+            ultimoIndex = announce.rindex('/')
+
+        indexSepare = announce.rindex(':')
+        port = announce[indexSepare+1:ultimoIndex]
+
+    ip = announce[start:indexSepare]
+
+    return ip, int(port)

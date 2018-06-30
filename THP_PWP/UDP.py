@@ -132,21 +132,4 @@ class UDPConnection(Thread):
         else:
             qtdPeers = self.num_want
 
-        try:
-
-            for i in range(0, qtdPeers):
-                ip = self.getFullIP(struct.unpack('BBBB', data[i*6:((i*6)+4)]))
-                port = struct.unpack('!h', data[((i*6)+4):((i*6)+4)+2])[0]
-
-                if(port  < 0):
-                    port *= -1
-
-                print(ip, ":", port)
-                self.peers.append(ip+':'+str(port))
-
-        except Exception as ex:
-            print("Error em printar a lista: " + str(ex))
-
-
-    def getFullIP(self, data):
-        return str(data[0])+'.'+str(data[1])+'.'+str(data[2])+'.'+str(data[3])
+        CommonDef.getFullListPeers(data, seeders)

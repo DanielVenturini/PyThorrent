@@ -4,6 +4,7 @@ from requests.utils import quote
 from BencodeDecode import Decode
 from THP_PWP import CommonDef
 from threading import Thread
+from math import floor
 import socket
 
 class TCPConnection(Thread):
@@ -96,9 +97,9 @@ class TCPConnection(Thread):
 
     def getPeersTCP(self, data):
         try:
-            print("Vai decodificar: ", data)
             dic = Decode().decodeBytes(data.decode('ISO8859-1'), data)
-            print("Jah decodificou")
-            print(dic['peers'])
+            peersList = dic['peers']
+            print("LIsta dos peers: ", peersList)
+            print(CommonDef.getFullListPeers(peersList, int(floor(len(peersList)/6))))
         except Exception as ex:
-            print('Erro na hora de recuperar os peers em TCP: ' + str(ex))
+            print('Erro nos peers em TCP: ' + str(ex))

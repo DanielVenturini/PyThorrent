@@ -183,23 +183,17 @@ def getAddressTracker(announce):
 def getFullIP(data):
     return str(data[0])+'.'+str(data[1])+'.'+str(data[2])+'.'+str(data[3])
 
-def getFullListPeers(data, qtdPeers):
+def getFullListPeers(data, qtdPeers, list):
     try:
 
-        peers = []
         for i in range(0, qtdPeers):
-            ip = getFullIP(struct.unpack('BBBB', data[i * 6:((i * 6) + 4)]))
-            port = struct.unpack('!h', data[((i * 6) + 4):((i * 6) + 4) + 2])[0]
+            ip = getFullIP(struct.unpack('BBBB', data[i*6 : ((i * 6) + 4)]))
+            port = struct.unpack('!h', data[((i*6)+4) : ((i*6)+4)+2])[0]
 
             if (port < 0):
                 port *= -1
 
-            #print(ip, ":", port)
-            peers.append(ip + ':' + str(port))
-
-        print("Chegou no final")
-        return peers
+            list.append(ip + ':' + str(port))
 
     except Exception as ex:
-        print("Error em printar a lista: " + str(ex))
-        return peers
+        print("Error " + str(ex))

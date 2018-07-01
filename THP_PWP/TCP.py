@@ -9,14 +9,15 @@ import socket
 
 class TCPConnection(Thread):
 
-    def __init__(self, torrentName, peer_id, port, announceList, num_want, rawinfo, lenTorrent, defsInterface):
+    def __init__(self, torrentName, peer_id, port, announceList, num_want, rawinfo, lenTorrent, defsInterface, listPeers):
         Thread.__init__(self)
 
         self.peers = []
         self.port = port
+        self.rawinfo = rawinfo
         self.peer_id = peer_id
         self.num_want = num_want
-        self.rawinfo = rawinfo
+        self.listPeers = listPeers
         self.lenTorrent = lenTorrent
         self.torrentName = torrentName
         self.announceList = announceList
@@ -78,7 +79,6 @@ class TCPConnection(Thread):
             s.connect((addressTracker, portTracker))
             s.send(message)
             response = s.recv(1024)
-            print(response)
 
             if(self.verifyResponse(response)):
                 # save the tracker
@@ -99,7 +99,10 @@ class TCPConnection(Thread):
         try:
             dic = Decode().decodeBytes(data.decode('ISO8859-1'), data)
             peersList = dic['peers']
-            print("LIsta dos peers: ", peersList)
-            print(CommonDef.getFullListPeers(peersList, int(floor(len(peersList)/6))))
+            seeders = int(floor(len(peersList)/6))
+            CommonDef.getFullListPeers(peersList, seeders, self.listPeers)
+
+            for addr in self.listPeers:
+                print(addr)
         except Exception as ex:
             print('Erro nos peers em TCP: ' + str(ex))

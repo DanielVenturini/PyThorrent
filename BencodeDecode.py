@@ -41,7 +41,6 @@ class Decode:
         self.dic = self.getMainDictionarie()
 
     def decodeBytes(self,respDecoded, respBinary):
-        print(respBinary)
         self.file = None
         self.respDecoded = respDecoded
         self.respBinary = respBinary

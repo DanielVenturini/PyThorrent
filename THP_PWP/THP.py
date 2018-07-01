@@ -19,7 +19,7 @@ class THP(Thread):
             self.torrentName = torrentName
             return
 
-        self.peers = []
+        self.listPeers = []
         self.dict = dict
         self.rawinfo = rawinfo
         self.defsInterface = defsInterface
@@ -39,5 +39,5 @@ class THP(Thread):
         listPeers = []
         complete = None
         print(self.torrentName)
-        #UDPConnection(self.torrentName, self.peer_id, self.portUDP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface).start()
-        TCPConnection(self.torrentName, self.peer_id, self.portTCP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface).start()
+        UDPConnection(self.torrentName, self.peer_id, self.portUDP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface, self.listPeers).start()
+        #TCPConnection(self.torrentName, self.peer_id, self.portTCP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface, self.listPeers).start()

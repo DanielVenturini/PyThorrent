@@ -8,7 +8,7 @@ import struct
 
 class UDPConnection(Thread):
 
-    def __init__(self, torrentName, peer_id, port, announceList, num_want, rawinfo, lenTorrent, defsInterface):
+    def __init__(self, torrentName, peer_id, port, announceList, num_want, rawinfo, lenTorrent, defsInterface, listPeers):
         Thread.__init__(self)
 
         self.peers = []
@@ -16,6 +16,7 @@ class UDPConnection(Thread):
         self.peer_id = peer_id
         self.rawinfo = rawinfo
         self.num_want = num_want
+        self.listPeers = listPeers
         self.lenTorrent = lenTorrent
         self.torrentName = torrentName
         self.announceList = announceList
@@ -101,8 +102,6 @@ class UDPConnection(Thread):
         else:
             resp = s.recvfrom(20+((20+6*self.num_want) + (24+6*self.num_want)))[0]
 
-        print("Tamanho da resposta: ", len(resp))
-
         if(len(resp) <= 26):
             return False, None
 
@@ -132,4 +131,6 @@ class UDPConnection(Thread):
         else:
             qtdPeers = self.num_want
 
-        CommonDef.getFullListPeers(data, seeders)
+        CommonDef.getFullListPeers(data, seeders, self.listPeers)
+        for addr in self.listPeers:
+            print(addr)

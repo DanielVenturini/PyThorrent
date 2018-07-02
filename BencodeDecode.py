@@ -173,7 +173,6 @@ class Decode:
                 self.pos += 1
                 value = self.respBinary[self.pos:self.pos+fullSize]
                 self.pos += fullSize
-                print("Todo valor aqui: ", value)
 
             # if is get raw bytes, stop the get raw bytes
             if (key.__eq__('info')):

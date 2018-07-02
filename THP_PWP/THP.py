@@ -3,6 +3,7 @@
 from THP_PWP.UDP import UDPConnection
 from THP_PWP.TCP import TCPConnection
 from THP_PWP import CommonDef
+from THP_PWP.PWP import PWP
 from threading import Thread
 
 class THP(Thread):
@@ -39,5 +40,6 @@ class THP(Thread):
         listPeers = []
         complete = None
         print(self.torrentName)
-        #UDPConnection(self.torrentName, self.peer_id, self.portUDP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface, self.listPeers).start()
+        UDPConnection(self.torrentName, self.peer_id, self.portUDP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface, self.listPeers).start()
         TCPConnection(self.torrentName, self.peer_id, self.portTCP, self.dict['announce-list'], self.num_want, self.rawinfo, self.lenTorrent, self.defsInterface, self.listPeers).start()
+        PWP(self.torrentName, self.peer_id, self.rawinfo, self.lenTorrent, self.defsInterface, self.listPeers, complete).start()

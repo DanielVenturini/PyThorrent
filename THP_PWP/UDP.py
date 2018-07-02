@@ -3,6 +3,7 @@
 from THP_PWP import CommonDef
 from threading import Thread
 from random import randint
+import network
 import socket
 import struct
 
@@ -66,7 +67,7 @@ class UDPConnection(Thread):
 
     def createSocketUDP(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.bind(('192.168.0.29', self.port))
+        s.bind((network.getIP_BC()[0], self.port))
         self.port = int(s.getsockname()[1])
         s.settimeout(0.5)
 
@@ -109,6 +110,7 @@ class UDPConnection(Thread):
         if(action != 1 or new_transaction_id != transaction_id):
             return False, None
 
+        seeders = self.getSeeders(seeders)
         print("Recebido: ", action, " ", interval, " ", ieechers, " ", seeders)
         self.defsInterface.updatePeer(self.torrentName, seeders)
         self.recList(resp[20:], seeders)
@@ -122,15 +124,15 @@ class UDPConnection(Thread):
 
 
     def recList(self, data, seeders):
-        print("Dado original: ", data)
-
-        if(self.num_want == -1):
-            qtdPeers = seeders
-        elif(self.num_want > seeders):
-            qtdPeers = seeders
-        else:
-            qtdPeers = self.num_want
 
         CommonDef.getFullListPeers(data, seeders, self.listPeers)
         for addr in self.listPeers:
             print(addr)
+
+    def getSeeders(self, seeders):
+        if(self.num_want == -1):
+            return seeders
+        elif(self.num_want > seeders):
+            return seeders
+        else:
+            return self.num_want

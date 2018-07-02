@@ -67,15 +67,16 @@ def createAndInsertLines(fileName, lines):
 # get the port which the client is hear for new connections
 # the protocol refer to line in the configure.pt
 def getPort(protocol):
+
     try:
         # read the firsts 4 bytes from second line
         # because the first line is the peer id
         if(protocol.__eq__('TCP')):
-            line = 2
+            line = 1
         elif(protocol.__eq__('UDP')):
-            line = 3
+            line = 2
         else:   #pwp
-            line = 4
+            line = 3
 
         port = openAndRead(fileName='configures/configure.pt', line=line, at=5)
         if(port.__eq__('')):
@@ -88,10 +89,10 @@ def getPort(protocol):
         # and add in first line the peer id
         # and second line the port
         port = list()
-        port.append(createPeerId())
-        port.append(str(randint(10000, 32767)))
-        port.append(str(randint(10000, 32767)))
-        port.append(str(randint(10000, 32767)))
+        port.append(createPeerId() + '# this line is the peer id')
+        port.append(str(randint(10000, 32767)) + ' # this line is the TCP port')
+        port.append(str(randint(10000, 32767)) + '               # this line is the UDP port')
+        port.append(str(randint(10000, 32767)) + '               # this line is the PWP port')
 
         createAndInsertLines('configure.pt', port)
         return getPort(protocol)
@@ -197,3 +198,20 @@ def getFullListPeers(data, qtdPeers, list):
 
     except Exception as ex:
         print("Error " + str(ex))
+
+# if the configure file not exists, or has a invalid data
+# create new file and insert the values
+def checkConfigure_pt():
+    try:
+        for line in range(0, 4):
+            if(openAndRead(fileName='configures/configure.pt', line=line, at=5).__eq__('')):
+                raise Exception
+
+    except:
+        port = list()
+        port.append(createPeerId() + ' # this line is the peer id')
+        port.append(str(randint(10000, 32767)) + '               # this line is the TCP port')
+        port.append(str(randint(10000, 32767)) + '               # this line is the UDP port')
+        port.append(str(randint(10000, 32767)) + '               # this line is the PWP port')
+
+        createAndInsertLines('configure.pt', port)

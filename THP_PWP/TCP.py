@@ -22,6 +22,9 @@ class TCPConnection(Thread):
         self.torrentName = torrentName
         self.announceList = announceList
         self.defsInterface = defsInterface
+        print(self.peer_id)
+        print(CommonDef.getPort('PWP'))
+        print(CommonDef.getSHA1(self.rawinfo, hex=False))
 
     def run(self):
         # try announces backup
@@ -66,6 +69,7 @@ class TCPConnection(Thread):
                 'uploaded=' + str(uploaded) + '&' +
                 'downloaded=' + str(downloaded) + '&' +
                 'left=' + str(left) + '&' +
+                'num_want=' + str(self.num_want) + '&' +
                 'compact=1' +
                 event +
                 ' HTTP/1.1\r\n\r\n').encode()

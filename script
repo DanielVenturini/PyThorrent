@@ -1,0 +1,22 @@
+# Name Length | Protocol Name | Reserved | Info hash | Peer ID
+
+import socket
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+name_length = chr(19).encode()
+protocol_name = 'BitTorrent protocol'.encode()
+reserved = (8*chr(0)).encode()
+info_hash = b'cb)S\xb7\xb8\xa3v\xd1\x12\x8b\xd2~\xa1~&n\xd4\x9f\x8b'
+peer_id = '-PT1012-162465345220'.encode()
+
+mensagem = name_length+protocol_name+reserved+info_hash+peer_id
+s.settimeout(1)
+s.connect(('105.110.252.162', 32214))
+s.send(mensagem)
+s.recv(68)
+
+'203.235.23.130', 32156
+'105.110.252.162', 32214
+'149.11.120.130', 17303
+'103.1.101.152', 29049
+'105.110.252.162', 32214

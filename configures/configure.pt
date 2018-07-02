@@ -1,4 +1,4 @@
--PT1012-281616775237
-15576
-11548
-29553
+-PT1012-162465345220 # this line is the peer id
+20050                # this line is the TCP port
+14906                # this line is the UDP port
+31843                # this line is the PWP port
